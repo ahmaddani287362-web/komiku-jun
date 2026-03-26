@@ -3,810 +3,606 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KOMIKU — Manga Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Manga Track — Comic & Manga Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --ink:#0D0D0F;--ink2:#1A1A1F;--ink3:#242428;--ink4:#2E2E35;
-  --border:#333340;--border-soft:#28282F;
-  --paper:#F2EFE8;--paper2:#E8E4DB;
-  --red:#E8344A;--red-dim:#8B1F2B;--red-soft:rgba(232,52,74,.12);
-  --teal:#2ABFAA;--teal-dim:#1A7A6E;
-  --amber:#E8A030;--amber-dim:#8B6020;
-  --blue:#4A7FE8;
-  --text:#F0EDE6;--text-muted:#8A8898;--text-dim:#50505E;
-  --serif:'Noto Serif JP',serif;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;
-}
-body{background:var(--ink);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
-
-/* HALFTONE TEXTURE */
-body::before{content:'';position:fixed;inset:0;opacity:.03;pointer-events:none;z-index:0;
-  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
-  background-size:12px 12px}
-
-/* SYNC BAR */
-.sync-bar{background:var(--ink2);border-bottom:1px solid var(--border-soft);padding:.4rem 2rem;display:flex;align-items:center;gap:.6rem;font-size:.72rem;color:var(--text-dim);font-family:var(--mono)}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);flex-shrink:0}
-.sync-dot.online{background:var(--teal)}.sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}.sync-dot.error{background:var(--red)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* HEADER */
-header{position:sticky;top:0;z-index:100;background:rgba(13,13,15,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border-soft);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:baseline;gap:.4rem}
-.logo-main{font-family:var(--serif);font-size:1.5rem;font-weight:300;letter-spacing:.2em;color:var(--paper);text-transform:uppercase}
-.logo-sub{font-family:var(--mono);font-size:.65rem;color:var(--text-dim);letter-spacing:.1em}
-.header-right{display:flex;gap:.5rem;align-items:center}
-.btn{font-family:var(--mono);font-size:.72rem;padding:.45rem 1rem;border-radius:1px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:.2s;letter-spacing:.04em}
-.btn:hover{border-color:var(--red);color:var(--red)}
-.btn-primary{background:var(--red);border-color:var(--red);color:#fff}
-.btn-primary:hover{background:#c0243a;border-color:#c0243a}
-.btn:disabled{opacity:.3;cursor:not-allowed}
-.btn-icon{width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;font-size:.9rem}
-
-/* STATS ROW */
-.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border-soft);border-bottom:1px solid var(--border-soft)}
-.stat-cell{background:var(--ink2);padding:1rem 1.5rem;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
-.stat-cell:hover{background:var(--ink3)}
-.stat-cell::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--red);transform:scaleX(0);transition:.2s;transform-origin:left}
-.stat-cell:hover::after,.stat-cell.active::after{transform:scaleX(1)}
-.stat-cell.active{background:var(--ink3)}
-.stat-lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.3rem}
-.stat-val{font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--text);line-height:1}
-.stat-sub{font-family:var(--mono);font-size:.62rem;color:var(--text-dim);margin-top:.2rem}
-
-/* LAYOUT */
-main{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 108px)}
-
-/* SIDEBAR */
-aside{background:var(--ink2);border-right:1px solid var(--border-soft);padding:1.5rem 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;display:flex;flex-direction:column}
-.sb-section{padding:0 1rem;margin-bottom:1.5rem}
-.sb-title{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border-soft)}
-.nav-item{display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;cursor:pointer;transition:.12s;font-size:.825rem;color:var(--text-muted);border-radius:1px;margin-bottom:.1rem;font-family:var(--sans)}
-.nav-item:hover{background:var(--ink3);color:var(--text)}
-.nav-item.active{background:var(--red-soft);color:var(--red);border-left:2px solid var(--red);padding-left:calc(.6rem - 2px)}
-.nav-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.nav-count{margin-left:auto;font-family:var(--mono);font-size:.65rem;color:var(--text-dim);background:var(--ink3);padding:.1rem .4rem;border-radius:2px}
-.tag-cloud{display:flex;flex-wrap:wrap;gap:.3rem}
-.tag{font-family:var(--mono);font-size:.65rem;padding:.2rem .5rem;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:.12s;border-radius:1px}
-.tag:hover,.tag.active{border-color:var(--red);color:var(--red);background:var(--red-soft)}
-.format-tabs{display:flex;flex-direction:column;gap:.15rem}
-.fmt-btn{font-family:var(--mono);font-size:.72rem;padding:.4rem .6rem;border:none;background:transparent;color:var(--text-dim);cursor:pointer;text-align:left;border-radius:1px;transition:.12s;display:flex;align-items:center;justify-content:space-between}
-.fmt-btn:hover{background:var(--ink3);color:var(--text)}
-.fmt-btn.active{background:var(--red-soft);color:var(--red)}
-
-/* CONTENT */
-.content{padding:1.5rem 2rem;background:var(--ink)}
-.content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
-.page-title{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:var(--text)}
-.page-title em{color:var(--red);font-style:italic}
-.toolbar{display:flex;gap:.5rem;align-items:center}
-.search-wrap{position:relative;flex:1;max-width:300px}
-.search-input{width:100%;background:var(--ink2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:.78rem;padding:.5rem .9rem .5rem 2.2rem;border-radius:1px;outline:none;transition:.2s}
-.search-input:focus{border-color:var(--red)}
-.search-input::placeholder{color:var(--text-dim)}
-.search-icon{position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:.85rem}
-.sort-select{background:var(--ink2);border:1px solid var(--border);color:var(--text-muted);font-family:var(--mono);font-size:.72rem;padding:.5rem .8rem;border-radius:1px;cursor:pointer;outline:none}
-.view-toggle{display:flex;gap:2px}
-.vbtn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:.12s;font-size:.9rem}
-.vbtn:hover,.vbtn.active{border-color:var(--red);color:var(--red)}
-
-/* GRID */
-.manga-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:1rem}
-.manga-card{background:var(--ink2);border:1px solid var(--border-soft);cursor:pointer;transition:.2s;position:relative;overflow:hidden}
-.manga-card:hover{border-color:var(--red);transform:translateY(-2px)}
-.manga-cover{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--ink3)}
-.cover-ph{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
-.cover-ph-letter{font-family:var(--serif);font-size:2.8rem;font-weight:300;opacity:.35;position:relative;z-index:1}
-.status-stripe{position:absolute;top:0;left:0;bottom:0;width:3px}
-.stripe-reading{background:var(--teal)}
-.stripe-completed{background:var(--amber)}
-.stripe-plan{background:var(--blue)}
-.stripe-dropped{background:var(--red)}
-.stripe-paused{background:var(--text-dim)}
-.card-badge{position:absolute;top:.5rem;right:.5rem;font-family:var(--mono);font-size:.58rem;letter-spacing:.04em;padding:.2rem .45rem;font-weight:500;text-transform:uppercase;z-index:2}
-.badge-reading{background:rgba(42,191,170,.2);color:#4DDCC8;border:1px solid rgba(42,191,170,.3)}
-.badge-completed{background:rgba(232,160,48,.2);color:#F0B84A;border:1px solid rgba(232,160,48,.3)}
-.badge-plan{background:rgba(74,127,232,.2);color:#7AAFF5;border:1px solid rgba(74,127,232,.3)}
-.badge-dropped{background:rgba(232,52,74,.2);color:#F07080;border:1px solid rgba(232,52,74,.3)}
-.badge-paused{background:rgba(80,80,94,.3);color:#8A8898;border:1px solid rgba(80,80,94,.4)}
-.card-info{padding:.6rem .7rem}
-.card-title{font-size:.8rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.2rem}
-.card-meta{font-family:var(--mono);font-size:.62rem;color:var(--text-dim);display:flex;gap:.4rem;align-items:center;margin-bottom:.25rem}
-.card-fmt{font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;padding:.1rem .35rem;border-radius:1px}
-.fmt-manga{background:rgba(232,52,74,.15);color:#E8344A}
-.fmt-manhwa{background:rgba(42,191,170,.15);color:#2ABFAA}
-.fmt-manhua{background:rgba(232,160,48,.15);color:#E8A030}
-.ch-progress{font-family:var(--mono);font-size:.65rem;color:var(--text-dim);display:flex;align-items:center;justify-content:space-between;margin-top:.3rem}
-.ch-bar{height:2px;background:var(--border);overflow:hidden;margin-top:.3rem}
-.ch-fill{height:100%;transition:.3s}
-.star-row{display:flex;gap:.05rem;margin-top:.25rem}
-.star{font-size:.65rem;color:var(--text-dim)}.star.filled{color:var(--amber)}
-
-/* LIST */
-.manga-list{display:flex;flex-direction:column;gap:.4rem}
-.list-item{background:var(--ink2);border:1px solid var(--border-soft);display:grid;grid-template-columns:52px 1fr auto;gap:.75rem;align-items:center;padding:.65rem .9rem;cursor:pointer;transition:.12s;position:relative;overflow:hidden}
-.list-item:hover{border-color:var(--red)}
-.list-thumb{width:52px;height:70px;object-fit:cover;flex-shrink:0;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--text-dim);overflow:hidden}
-.list-thumb img{width:100%;height:100%;object-fit:cover}
-.list-body{min-width:0}
-.list-title{font-size:.85rem;font-weight:500;color:var(--text);margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.list-detail{font-family:var(--mono);font-size:.68rem;color:var(--text-dim);display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
-.list-actions{display:flex;gap:.3rem;align-items:center}
-
-/* MODALS */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:.2s}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--ink2);border:1px solid var(--border);width:100%;max-width:660px;max-height:90vh;overflow-y:auto}
-.modal-header{padding:1.5rem 1.75rem 1.1rem;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:flex-start}
-.modal-title{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:var(--text)}
-.modal-close{background:none;border:1px solid var(--border);color:var(--text-muted);width:30px;height:30px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:.15s}
-.modal-close:hover{border-color:var(--red);color:var(--red)}
-.modal-body{padding:1.25rem 1.75rem 1.75rem}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
-.fg{display:flex;flex-direction:column;gap:.35rem}
-.fg.full{grid-column:1/-1}
-.fg label{font-family:var(--mono);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
-input[type=text],input[type=number],input[type=url],textarea,select{background:var(--ink3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:.8rem;padding:.55rem .8rem;outline:none;transition:.2s;width:100%}
-input:focus,textarea:focus,select:focus{border-color:var(--red)}
-textarea{resize:vertical;min-height:72px;font-family:var(--sans);font-size:.82rem}
-.modal-footer{display:flex;justify-content:flex-end;gap:.5rem;padding-top:.85rem;border-top:1px solid var(--border-soft);margin-top:.85rem}
-
-/* ADD LAYOUT */
-.add-layout{display:flex;gap:1.1rem;margin-bottom:1.1rem;align-items:flex-start}
-.cover-preview-box{flex-shrink:0;width:80px}
-.cover-preview-box img,.cover-ph-sm{width:80px;height:107px;object-fit:cover;border:1px solid var(--border);background:var(--ink3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.8rem;color:var(--text-dim)}
-.star-input{display:flex;gap:.2rem}
-.star-ibtn{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text-dim);transition:.1s;padding:.05rem}
-.star-ibtn.active{color:var(--amber)}
-
-/* DETAIL */
-.detail-cover{width:100px;height:133px;object-fit:cover;flex-shrink:0}
-.detail-cover-ph{width:100px;height:133px;background:var(--ink3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:2.2rem;color:var(--text-dim)}
-.detail-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border-soft);font-size:.82rem}
-.detail-row:last-child{border-bottom:none}
-.detail-key{font-family:var(--mono);font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em}
-.detail-val{color:var(--text);text-align:right;font-size:.82rem}
-.rating-big{font-family:var(--serif);font-size:2.5rem;font-weight:300;color:var(--amber);line-height:1}
-
-/* STATS PAGE */
-.stats-page{display:none;padding:1.5rem 2rem;background:var(--ink)}
-.stats-page.active{display:block}
-.content.hidden{display:none}
-.s-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.85rem;margin-bottom:1.5rem}
-.s-card{background:var(--ink2);border:1px solid var(--border-soft);padding:1.1rem 1.25rem;position:relative;overflow:hidden}
-.s-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--red)}
-.s-card-lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.3rem}
-.s-card-val{font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--text);line-height:1}
-.s-card-sub{font-family:var(--mono);font-size:.62rem;color:var(--text-dim);margin-top:.2rem}
-.chart-block{background:var(--ink2);border:1px solid var(--border-soft);padding:1.25rem 1.5rem;margin-bottom:.85rem}
-.chart-head{font-family:var(--serif);font-size:1rem;font-weight:300;color:var(--text);margin-bottom:1rem}
-.chart-head em{color:var(--red);font-style:italic}
-.s-bar-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem}
-.s-bar-lbl{font-family:var(--mono);font-size:.68rem;width:100px;text-align:right;color:var(--text-muted);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s-bar-track{flex:1;height:4px;background:var(--border);overflow:hidden}
-.s-bar-fill{height:100%;transition:.5s}
-.s-bar-val{font-family:var(--mono);font-size:.65rem;color:var(--text-dim);width:22px;flex-shrink:0}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
-.status-row{display:flex;align-items:center;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border-soft);font-size:.82rem}
-.status-row:last-child{border-bottom:none}
-.status-left{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.72rem;color:var(--text-muted)}
-
-/* EMPTY & LOADING */
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;text-align:center}
-.empty-icon{font-family:var(--serif);font-size:3.5rem;color:var(--text-dim);margin-bottom:.75rem;opacity:.3}
-.empty-title{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:var(--text-muted);margin-bottom:.4rem}
-.empty-sub{font-family:var(--mono);font-size:.75rem;color:var(--text-dim)}
-.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;gap:.85rem}
-.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:1.75rem;right:1.75rem;background:var(--ink2);border:1px solid var(--red);color:var(--red);padding:.65rem 1.1rem;font-family:var(--mono);font-size:.78rem;z-index:500;transform:translateY(16px);opacity:0;transition:.25s;pointer-events:none}
-.toast.show{transform:translateY(0);opacity:1}
-.toast.success{border-color:var(--teal);color:var(--teal)}
-
-::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border)}::-webkit-scrollbar-thumb:hover{background:var(--red)}
-
-/* MOBILE */
-@media(max-width:900px){
-  main{grid-template-columns:1fr}aside{display:none}
-  .stats-row{grid-template-columns:repeat(3,1fr)}
-  .form-grid{grid-template-columns:1fr}.fg.full{grid-column:1}
-  .add-layout{flex-direction:column}
-  .two-col{grid-template-columns:1fr}
-  body{padding-bottom:70px}
-  .mob-fab{display:flex;position:fixed;bottom:1rem;right:1rem;z-index:150}
-  .fab-add{width:48px;height:48px;border-radius:50%;background:var(--red);border:none;color:#fff;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 20px rgba(232,52,74,.4);display:flex;align-items:center;justify-content:center}
-}
-.mob-fab{display:none}
-@media(max-width:600px){.stats-row{grid-template-columns:repeat(2,1fr)}.manga-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}}
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--gold:#C9A84C;--gold-light:#E8C97A;--gold-dim:#8B6E30;--bg:#0A0A0C;--surface:#111116;--surface2:#18181F;--surface3:#1F1F28;--border:#2A2A35;--border-soft:#222230;--text:#F0EEE8;--text-muted:#8A8899;--text-dim:#55546A;--red:#E05555;--green:#5EC47A;--blue:#5B8DEF;--purple:#9B6BF0;--pink:#E86F9C;--orange:#E8A75C;--serif:'Cormorant Garamond',serif;--sans:'DM Sans',sans-serif}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+  
+  /* Header Styles */
+  header{position:sticky;top:0;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-soft);padding:0 2.5rem;height:80px;display:flex;align-items:center;justify-content:space-between}
+  .logo{font-family:var(--serif);font-size:1.9rem;font-weight:300;letter-spacing:.3em;color:var(--gold);text-transform:uppercase}
+  .logo span{color:var(--text-dim);font-style:italic}
+  .tagline{font-family:var(--sans);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);border-left:1px solid var(--border);padding-left:1rem}
+  .tagline em{color:var(--gold-light)}
+  .btn{font-family:var(--sans);font-size:.8rem;font-weight:500;padding:.55rem 1.35rem;border-radius:2px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:.2s}
+  .btn:hover{border-color:var(--gold-dim);color:var(--gold)}
+  .btn-primary{background:linear-gradient(115deg, var(--gold) 0%, var(--gold-dim) 100%);border-color:transparent;color:#0A0A0C}
+  .btn-primary:hover{background:linear-gradient(115deg, var(--gold-light) 0%, var(--gold) 100%)}
+  
+  /* Stats Bar */
+  .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border-soft)}
+  .stat-item{background:var(--surface);padding:1.5rem 2.5rem;cursor:pointer;transition:.2s}
+  .stat-item:hover{background:var(--surface2)}
+  .stat-label{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+  .stat-value{font-family:var(--serif);font-size:2.2rem;font-weight:300;color:var(--text)}
+  
+  /* Main Content */
+  main{display:grid;grid-template-columns:260px 1fr}
+  aside{background:var(--surface);border-right:1px solid var(--border-soft);padding:2rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
+  .sidebar-section{padding:0 1.5rem;margin-bottom:2rem}
+  .sidebar-title{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border-soft);padding-bottom:.5rem;margin-bottom:.75rem}
+  .nav-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;cursor:pointer;color:var(--text-muted)}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{background:rgba(201,168,76,.08);color:var(--gold);border-left:2px solid var(--gold)}
+  .content{padding:2rem 2.5rem}
+  .section-title{font-family:var(--serif);font-size:1.75rem;font-weight:300}
+  .section-title em{color:var(--gold)}
+  
+  /* Search & Grid */
+  .search-row{display:flex;gap:.75rem;margin:1.5rem 0}
+  .search-wrap{flex:1;position:relative}
+  .search-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.65rem 1rem .65rem 2.75rem;border-radius:2px}
+  .search-icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%)}
+  .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1.25rem}
+  .media-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:2px;overflow:hidden;cursor:pointer;transition:.2s}
+  .media-card:hover{border-color:var(--gold-dim);transform:translateY(-2px)}
+  .card-poster{width:100%;aspect-ratio:2/3;object-fit:cover}
+  .poster-placeholder{width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:3rem}
+  .card-badge{position:absolute;top:.6rem;right:.6rem;font-size:.65rem;padding:.25rem .5rem;border-radius:1px;background:rgba(0,0,0,.7)}
+  .card-info{padding:.75rem}
+  .card-title{font-size:.85rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-meta{font-size:.72rem;color:var(--text-dim)}
+  .progress-bar{height:2px;background:var(--border);margin-top:.6rem}
+  .progress-fill{height:100%;background:var(--gold)}
+  
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s}
+  .modal-overlay.open{opacity:1;pointer-events:all}
+  .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;border-radius:2px}
+  .modal-header{padding:1.5rem 2rem;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between}
+  .modal-body{padding:1.5rem 2rem}
+  .tmdb-wrap{position:relative;margin-bottom:1.25rem}
+  .tmdb-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.65rem .9rem;border-radius:2px}
+  .tmdb-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-top:none;max-height:280px;overflow-y:auto;display:none;z-index:50}
+  .tmdb-item{display:flex;gap:.75rem;padding:.6rem .9rem;cursor:pointer;border-bottom:1px solid var(--border-soft)}
+  .tmdb-item:hover{background:var(--surface3)}
+  .tmdb-thumb{width:36px;height:54px;object-fit:cover;border-radius:2px}
+  .tmdb-nothumb{width:36px;height:54px;background:var(--surface3);display:flex;align-items:center;justify-content:center}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .form-group{display:flex;flex-direction:column;gap:.4rem}
+  .form-group.full{grid-column:1/-1}
+  label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+  input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.65rem .9rem;border-radius:2px}
+  .star-rating{display:flex;gap:.25rem}
+  .star-btn{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-dim)}
+  .star-btn.active{color:var(--gold)}
+  .toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface);border:1px solid var(--gold-dim);padding:.75rem 1.25rem;border-radius:2px;z-index:500;opacity:0;transition:.3s}
+  .toast.show{opacity:1}
+  .empty{text-align:center;padding:4rem;color:var(--text-dim)}
 </style>
 </head>
 <body>
 
-<div class="sync-bar">
-  <span class="sync-dot" id="sync-dot"></span>
-  <span id="sync-status">Connecting...</span>
-  <span style="margin-left:auto;opacity:.4">KOMIKU v1.0</span>
-</div>
-
 <header>
-  <div class="logo">
-    <span class="logo-main">Komiku</span>
-    <span class="logo-sub">manga tracker</span>
+  <div style="display:flex;align-items:baseline;gap:1rem">
+    <div class="logo">Manga<span>Track</span></div>
+    <div class="tagline">track your <em>manga</em> & <em>manhwa</em> journey</div>
   </div>
-  <div class="header-right">
-    <button class="btn btn-icon" onclick="showPage('stats')" title="Statistik">◈</button>
-    <button class="btn btn-icon" onclick="exportJSON()" title="Export">↓</button>
-    <label class="btn btn-icon" style="cursor:pointer" title="Import">↑<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
-    <button class="btn" onclick="loadFromSheets()">↻ Sync</button>
-    <button class="btn btn-primary" onclick="openModal()">+ Add</button>
+  <div>
+    <button class="btn btn-primary" onclick="openModal()">+ Add Manga</button>
   </div>
 </header>
 
-<div class="stats-row">
-  <div class="stat-cell active" id="sc-all" onclick="filterStatus('all',this)"><div class="stat-lbl">Total</div><div class="stat-val" id="sv-total">—</div><div class="stat-sub">koleksi</div></div>
-  <div class="stat-cell" id="sc-reading" onclick="filterStatus('reading',this)"><div class="stat-lbl">Reading</div><div class="stat-val" id="sv-reading">—</div><div class="stat-sub">aktif dibaca</div></div>
-  <div class="stat-cell" id="sc-completed" onclick="filterStatus('completed',this)"><div class="stat-lbl">Completed</div><div class="stat-val" id="sv-completed">—</div><div class="stat-sub">selesai</div></div>
-  <div class="stat-cell" id="sc-plan" onclick="filterStatus('plan',this)"><div class="stat-lbl">Plan to Read</div><div class="stat-val" id="sv-plan">—</div><div class="stat-sub">antrian</div></div>
-  <div class="stat-cell" id="sc-paused" onclick="filterStatus('paused',this)"><div class="stat-lbl">On Hold</div><div class="stat-val" id="sv-paused">—</div><div class="stat-sub">ditunda</div></div>
+<div class="stats-bar">
+  <div class="stat-item" onclick="filterStatus('all')"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">0</div></div>
+  <div class="stat-item" onclick="filterStatus('reading')"><div class="stat-label">Reading</div><div class="stat-value" id="stat-reading">0</div></div>
+  <div class="stat-item" onclick="filterStatus('completed')"><div class="stat-label">Completed</div><div class="stat-value" id="stat-completed">0</div></div>
+  <div class="stat-item" onclick="filterStatus('plan')"><div class="stat-label">Plan to Read</div><div class="stat-value" id="stat-plan">0</div></div>
 </div>
 
 <main>
   <aside>
-    <div class="sb-section">
-      <div class="sb-title">Format</div>
-      <div class="format-tabs">
-        <button class="fmt-btn active" id="fmt-all" onclick="filterFmt('all',this)">◈ All Formats<span id="cnt-all">0</span></button>
-        <button class="fmt-btn" id="fmt-Manga" onclick="filterFmt('Manga',this)">🇯🇵 Manga<span id="cnt-Manga">0</span></button>
-        <button class="fmt-btn" id="fmt-Manhwa" onclick="filterFmt('Manhwa',this)">🇰🇷 Manhwa<span id="cnt-Manhwa">0</span></button>
-        <button class="fmt-btn" id="fmt-Manhua" onclick="filterFmt('Manhua',this)">🇨🇳 Manhua<span id="cnt-Manhua">0</span></button>
-      </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Status</div>
+      <div class="nav-item active" id="nav-all" onclick="filterStatus('all')">📚 All Manga</div>
+      <div class="nav-item" id="nav-reading" onclick="filterStatus('reading')">📖 Reading</div>
+      <div class="nav-item" id="nav-completed" onclick="filterStatus('completed')">✅ Completed</div>
+      <div class="nav-item" id="nav-plan" onclick="filterStatus('plan')">📋 Plan to Read</div>
+      <div class="nav-item" id="nav-dropped" onclick="filterStatus('dropped')">⛔ Dropped</div>
     </div>
-    <div class="sb-section">
-      <div class="sb-title">Status</div>
-      <div class="nav-item active" id="nav-all" onclick="filterStatus('all',this)"><span class="nav-dot" style="background:var(--text-dim)"></span>All<span class="nav-count" id="nc-all">0</span></div>
-      <div class="nav-item" id="nav-reading" onclick="filterStatus('reading',this)"><span class="nav-dot" style="background:var(--teal)"></span>Reading<span class="nav-count" id="nc-reading">0</span></div>
-      <div class="nav-item" id="nav-completed" onclick="filterStatus('completed',this)"><span class="nav-dot" style="background:var(--amber)"></span>Completed<span class="nav-count" id="nc-completed">0</span></div>
-      <div class="nav-item" id="nav-plan" onclick="filterStatus('plan',this)"><span class="nav-dot" style="background:var(--blue)"></span>Plan to Read<span class="nav-count" id="nc-plan">0</span></div>
-      <div class="nav-item" id="nav-paused" onclick="filterStatus('paused',this)"><span class="nav-dot" style="background:var(--text-dim)"></span>On Hold<span class="nav-count" id="nc-paused">0</span></div>
-      <div class="nav-item" id="nav-dropped" onclick="filterStatus('dropped',this)"><span class="nav-dot" style="background:var(--red)"></span>Dropped<span class="nav-count" id="nc-dropped">0</span></div>
-    </div>
-    <div class="sb-section">
-      <div class="sb-title">Genre</div>
-      <div class="tag-cloud" id="tag-cloud"></div>
-    </div>
-    <div class="sb-section" style="margin-top:auto">
-      <div class="sb-title">Pages</div>
-      <div class="nav-item" onclick="showPage('stats')"><span style="font-size:.8rem">◈</span> Statistik</div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Type</div>
+      <div class="nav-item" id="nav-type-all" onclick="filterType('all')">◈ All</div>
+      <div class="nav-item" id="nav-type-manga" onclick="filterType('Manga')">📘 Manga</div>
+      <div class="nav-item" id="nav-type-manhwa" onclick="filterType('Manhwa')">📱 Manhwa</div>
+      <div class="nav-item" id="nav-type-manhua" onclick="filterType('Manhua')">📙 Manhua</div>
+      <div class="nav-item" id="nav-type-comic" onclick="filterType('Comic')">🇺🇸 Comic</div>
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
-  <div class="content" id="main-content">
-    <div class="content-header">
-      <div class="page-title" id="page-title">All <em>Komik</em></div>
-      <div class="toolbar">
-        <div class="search-wrap">
-          <span class="search-icon">⌕</span>
-          <input class="search-input" type="text" placeholder="Cari judul, author, genre…" id="search-input" oninput="renderList()">
-        </div>
-        <select class="sort-select" id="sort-sel" onchange="renderList()">
-          <option value="added">Baru Ditambah</option>
-          <option value="rating">Rating</option>
-          <option value="title">Judul A-Z</option>
-          <option value="chapter">Chapter</option>
-          <option value="updated">Terakhir Update</option>
-        </select>
-        <div class="view-toggle">
-          <button class="vbtn active" id="vbtn-grid" onclick="setView('grid')" title="Grid">⊞</button>
-          <button class="vbtn" id="vbtn-list" onclick="setView('list')" title="List">☰</button>
-        </div>
+  <div class="content">
+    <div class="section-title" id="section-title">My <em>Manga Collection</em></div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" type="text" placeholder="Search manga, manhwa, author..." id="search-input" oninput="renderMedia()">
       </div>
+      <select id="sort-select" onchange="renderMedia()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.65rem">
+        <option value="added">Recently Added</option>
+        <option value="rating">Highest Rated</option>
+        <option value="title">A → Z</option>
+      </select>
     </div>
-    <div id="list-container"></div>
-  </div>
-
-  <!-- STATS PAGE -->
-  <div class="stats-page" id="stats-page">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
-      <div class="page-title">Koleksi <em>Stats</em></div>
-      <button class="btn" onclick="showPage('main')">← Kembali</button>
-    </div>
-    <div class="s-grid" id="stats-cards"></div>
-    <div class="two-col">
-      <div class="chart-block">
-        <div class="chart-head">Top <em>Genre</em></div>
-        <div id="chart-genre"></div>
-      </div>
-      <div class="chart-block">
-        <div class="chart-head">Status <em>Breakdown</em></div>
-        <div id="chart-status"></div>
-      </div>
-    </div>
-    <div class="two-col">
-      <div class="chart-block">
-        <div class="chart-head">Top <em>Author</em></div>
-        <div id="chart-author"></div>
-      </div>
-      <div class="chart-block">
-        <div class="chart-head">Format <em>Split</em></div>
-        <div id="chart-format"></div>
-      </div>
-    </div>
-    <div class="chart-block">
-      <div class="chart-head">Rating <em>Distribution</em></div>
-      <div id="chart-rating" style="display:flex;align-items:flex-end;gap:6px;height:80px;margin-top:.5rem"></div>
-    </div>
+    <div id="media-container"></div>
   </div>
 </main>
 
-<!-- FAB MOBILE -->
-<div class="mob-fab">
-  <button class="fab-add" onclick="openModal()">+</button>
-</div>
-
-<!-- ADD/EDIT MODAL -->
-<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+<!-- Modal Add/Edit Manga -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="modal-heading">Tambah Komik</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="section-title" style="font-size:1.3rem" id="modal-heading">Add New Manga</div>
+      <button class="btn" onclick="closeModal()" style="padding:.3rem .8rem">✕</button>
     </div>
     <div class="modal-body">
-      <div class="add-layout">
-        <div class="cover-preview-box" id="cover-preview-box">
-          <div class="cover-ph-sm" style="display:flex;align-items:center;justify-content:center" id="cover-ph">?</div>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div class="form-grid">
-            <div class="fg full"><label>Judul</label><input type="text" id="f-title" placeholder="Judul komik…" oninput="updateCoverLetter()"></div>
-            <div class="fg"><label>Format</label>
-              <select id="f-format">
-                <option value="Manga">Manga (JP)</option>
-                <option value="Manhwa">Manhwa (KR)</option>
-                <option value="Manhua">Manhua (CN)</option>
-              </select>
-            </div>
-            <div class="fg"><label>Status</label>
-              <select id="f-status">
-                <option value="plan">Plan to Read</option>
-                <option value="reading">Reading</option>
-                <option value="completed">Completed</option>
-                <option value="paused">On Hold</option>
-                <option value="dropped">Dropped</option>
-              </select>
-            </div>
+      <!-- AniList Search -->
+      <div style="margin-bottom:1.25rem">
+        <label>Cari dari AniList (gambar otomatis)</label>
+        <div class="tmdb-wrap">
+          <div class="tmdb-row">
+            <input class="tmdb-input" id="anilist-search" type="text" placeholder="Ketik judul manga/manhwa..." oninput="onAnilistSearch(this.value)" autocomplete="off">
+            <button class="btn" onclick="clearAnilist()">✕</button>
           </div>
+          <div class="tmdb-dropdown" id="anilist-dd"></div>
         </div>
       </div>
-      <div class="form-grid">
-        <div class="fg"><label>Author / Artist</label><input type="text" id="f-author" placeholder="Nama author"></div>
-        <div class="fg"><label>Genre</label><input type="text" id="f-genre" placeholder="Action, Romance…"></div>
-        <div class="fg"><label>Chapter Dibaca</label><input type="number" id="f-ch-read" placeholder="0" min="0" oninput="autoCalcCh()"></div>
-        <div class="fg"><label>Total Chapter <span id="ch-auto-label" style="color:var(--red);font-size:.6rem;letter-spacing:0;text-transform:none;font-weight:400"></span></label>
-          <input type="number" id="f-ch-total" placeholder="0 = ongoing" min="0" oninput="autoCalcCh()">
-        </div>
-        <div class="fg"><label>Score ANILIST/MAL (1-10)</label><input type="number" id="f-score" placeholder="0" min="0" max="10" step=".1"></div>
-        <div class="fg"><label>Rating Personal</label>
-          <div class="star-input" id="star-input">
-            <button class="star-ibtn" data-v="1" onclick="setRating(1)">★</button>
-            <button class="star-ibtn" data-v="2" onclick="setRating(2)">★</button>
-            <button class="star-ibtn" data-v="3" onclick="setRating(3)">★</button>
-            <button class="star-ibtn" data-v="4" onclick="setRating(4)">★</button>
-            <button class="star-ibtn" data-v="5" onclick="setRating(5)">★</button>
-          </div>
-        </div>
-        <div class="fg"><label>Cover URL (opsional)</label><input type="url" id="f-cover" placeholder="https://…" oninput="previewCover(this.value)"></div>
-        <div class="fg"><label>Tahun Terbit</label><input type="number" id="f-year" placeholder="2024" min="1950" max="2030"></div>
-        <div class="fg full"><label>Notes</label><textarea id="f-notes" placeholder="Catatan pribadi…"></textarea></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeModal()">Batal</button>
-        <button class="btn btn-primary" id="btn-save" onclick="saveEntry()">Simpan</button>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- DETAIL MODAL -->
-<div class="modal-overlay" id="detail-overlay" onclick="if(event.target===this)closeDetail()">
-  <div class="modal">
-    <div class="modal-header">
-      <div style="display:flex;gap:1rem;align-items:flex-start;width:100%">
-        <div id="d-cover"></div>
-        <div style="flex:1;min-width:0;padding-top:.2rem">
-          <div class="modal-title" id="d-title"></div>
-          <div style="font-family:var(--mono);font-size:.72rem;color:var(--text-dim);margin-top:.3rem" id="d-meta"></div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Title</label>
+          <input type="text" id="f-title" placeholder="Manga title...">
         </div>
-        <button class="modal-close" onclick="closeDetail()">✕</button>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="f-type">
+            <option value="Manga">📘 Manga (Japanese)</option>
+            <option value="Manhwa">📱 Manhwa (Korean)</option>
+            <option value="Manhua">📙 Manhua (Chinese)</option>
+            <option value="Comic">🇺🇸 Comic (Western)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="number" id="f-year" placeholder="2024">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="plan">📋 Plan to Read</option>
+            <option value="reading">📖 Reading</option>
+            <option value="completed">✅ Completed</option>
+            <option value="dropped">⛔ Dropped</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Author / Artist</label>
+          <input type="text" id="f-author" placeholder="Author name">
+        </div>
+        <div class="form-group">
+          <label>Genres</label>
+          <input type="text" id="f-genre" placeholder="Action, Fantasy, Romance...">
+        </div>
+        <div class="form-group">
+          <label>Total Chapters</label>
+          <input type="number" id="f-chapters" placeholder="Total chapters" min="0">
+        </div>
+        <div class="form-group">
+          <label>Current Chapter</label>
+          <input type="number" id="f-current-chapter" placeholder="Current chapter" min="0">
+        </div>
+        <div class="form-group">
+          <label>Total Volumes</label>
+          <input type="text" id="f-volumes" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Rating</label>
+          <div class="star-rating" id="star-rating">
+            <button class="star-btn" data-v="1" onclick="setRating(1)">★</button>
+            <button class="star-btn" data-v="2" onclick="setRating(2)">★</button>
+            <button class="star-btn" data-v="3" onclick="setRating(3)">★</button>
+            <button class="star-btn" data-v="4" onclick="setRating(4)">★</button>
+            <button class="star-btn" data-v="5" onclick="setRating(5)">★</button>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="f-notes" rows="2" placeholder="Personal thoughts..."></textarea>
+        </div>
+      </div>
+      
+      <input type="hidden" id="f-cover" value="">
+      <input type="hidden" id="f-anilist-id" value="">
+
+      <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-soft)">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="btn-save" onclick="saveEntry()">Save Manga</button>
       </div>
     </div>
-    <div class="modal-body" id="detail-body"></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
-const TMDB_KEY = 'a2c120d7d3aaaf1321ffe8a9899ef765';
+// ==================== ANILIST API CONFIG ====================
+const ANILIST_API = 'https://graphql.anilist.co';
 
-let data=[], currentRating=0, editingId=null;
-let fStatus='all', fFormat='all', fGenre='all', viewMode='grid';
-let isSaving=false;
+// ==================== DATA STORAGE ====================
+let mediaData = [];
+let currentRating = 0;
+let editingId = null;
+let filterSt = 'all';
+let filterTy = 'all';
+let viewMode = 'grid';
+let anilistTimer = null;
 
-// ── SYNC ──────────────────────────────────────────────────
-function setSS(s,m){document.getElementById('sync-dot').className='sync-dot '+s;document.getElementById('sync-status').textContent=m;}
-function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
-
-async function apiCall(body){
-  const r=await fetch(API,{method:'POST',body:JSON.stringify(body)});
-  const txt=await r.text();
-  try{return JSON.parse(txt);}catch(e){throw new Error('Server: '+txt.slice(0,80));}
+// Load dari localStorage (untuk demo, nanti bisa connect ke Google Sheets)
+function loadFromStorage() {
+  const saved = localStorage.getItem('mangaTracker');
+  if (saved) {
+    mediaData = JSON.parse(saved);
+  } else {
+    // Sample data
+    mediaData = [
+      { id: 1, title: "One Piece", type: "Manga", year: 1997, status: "reading", genre: "Action, Adventure, Fantasy", author: "Eiichiro Oda", chapters: 1088, currentChapter: 1050, volumes: "105", rating: 5, notes: "Peak fiction!", cover: "", added: Date.now() - 86400000 },
+      { id: 2, title: "Solo Leveling", type: "Manhwa", year: 2018, status: "completed", genre: "Action, Fantasy", author: "Chugong", chapters: 179, currentChapter: 179, volumes: "14", rating: 5, notes: "Best manhwa ever!", cover: "", added: Date.now() }
+    ];
+  }
+  renderMedia();
 }
 
-async function loadFromSheets(){
-  setSS('syncing','Loading...');
-  document.getElementById('list-container').innerHTML='<div class="loading"><div class="spinner"></div><span style="font-family:var(--mono);font-size:.78rem;color:var(--text-dim)">Memuat koleksi…</span></div>';
-  try{
-    const r=await fetch(API+'?action=getAll');
-    const j=await r.json();
-    if(j.error)throw new Error(j.error);
-    data=(j.comics||[]).map(m=>({
-      id:Number(m.id||0),title:String(m.title||''),format:String(m.format||'Manga'),
-      status:String(m.status||'plan'),author:String(m.author||''),genre:String(m.genre||''),
-      chRead:Number(m.chread||m.chRead||0),chTotal:Number(m.chtotal||m.chTotal||0),
-      score:Number(m.score||0),rating:Number(m.rating||0),cover:String(m.cover||''),
-      year:Number(m.year||0),notes:String(m.notes||''),added:Number(m.added||0),
-      updated:Number(m.updated||m.added||0)
-    }));
-    setSS('online','Synced · '+new Date().toLocaleTimeString('id-ID'));
-    renderList();
-  }catch(e){
-    setSS('error','Error: '+e.message);
-    document.getElementById('list-container').innerHTML='<div class="empty"><div class="empty-icon">◎</div><div class="empty-title">Gagal memuat</div><div class="empty-sub">Cek API URL di kode, lalu klik Sync</div></div>';
+function saveToStorage() {
+  localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
+}
+
+// ==================== ANILIST SEARCH FUNCTION ====================
+async function searchAnilist(query) {
+  const searchQuery = `
+    query ($search: String) {
+      Media (search: $search, type: MANGA) {
+        id
+        title {
+          romaji
+          english
+          native
+        }
+        coverImage {
+          large
+          extraLarge
+        }
+        startDate {
+          year
+        }
+        chapters
+        volumes
+        genres
+        status
+        description(asHtml: false)
+        staff {
+          edges {
+            node {
+              name {
+                full
+              }
+              primaryOccupations
+            }
+          }
+        }
+      }
+    }
+  `;
+  
+  try {
+    const response = await fetch(ANILIST_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        query: searchQuery, 
+        variables: { search: query } 
+      })
+    });
+    const data = await response.json();
+    return data.data?.Media || null;
+  } catch (err) {
+    console.error('AniList error:', err);
+    return null;
   }
 }
 
-// ── EXPORT / IMPORT ───────────────────────────────────────
-function exportJSON(){
-  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);
-  a.download='komiku-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
-  toast('Exported!','success');
+function onAnilistSearch(value) {
+  clearTimeout(anilistTimer);
+  if (value.length < 2) {
+    document.getElementById('anilist-dd').style.display = 'none';
+    return;
+  }
+  anilistTimer = setTimeout(async () => {
+    const manga = await searchAnilist(value);
+    const dd = document.getElementById('anilist-dd');
+    
+    if (!manga) {
+      dd.style.display = 'none';
+      return;
+    }
+    
+    // Get author name from staff data
+    let author = '';
+    if (manga.staff?.edges) {
+      const authorEdge = manga.staff.edges.find(edge => 
+        edge.node.primaryOccupations?.some(occ => occ.includes('Author') || occ.includes('Writer') || occ.includes('Story'))
+      );
+      if (authorEdge) author = authorEdge.node.name.full;
+    }
+    
+    dd.innerHTML = `
+      <div class="tmdb-item" onclick="selectAnilistManga(this)" 
+           data-id="${manga.id}"
+           data-title="${manga.title.romaji || manga.title.english || manga.title.native}"
+           data-cover="${manga.coverImage.large}"
+           data-year="${manga.startDate?.year || ''}"
+           data-chapters="${manga.chapters || '?'}"
+           data-volumes="${manga.volumes || '?'}"
+           data-genres="${(manga.genres || []).slice(0,3).join(', ')}"
+           data-author="${author}">
+        ${manga.coverImage.large ? `<img class="tmdb-thumb" src="${manga.coverImage.large}" loading="lazy">` : `<div class="tmdb-nothumb">${(manga.title.romaji || '?').charAt(0)}</div>`}
+        <div>
+          <div class="tmdb-name">${manga.title.romaji || manga.title.english}</div>
+          <div class="tmdb-sub">${manga.genres?.slice(0,3).join(', ') || ''} · ${manga.chapters || '?'} chapters · ${manga.startDate?.year || ''}</div>
+          ${author ? `<div class="tmdb-sub">✍️ ${author}</div>` : ''}
+        </div>
+      </div>
+    `;
+    dd.style.display = 'block';
+  }, 400);
 }
-async function importJSON(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async ev=>{
-    try{
-      const imp=JSON.parse(ev.target.result);
-      if(!Array.isArray(imp))throw new Error('Format tidak valid');
-      if(!confirm(`Import ${imp.length} komik?`))return;
-      setSS('syncing','Importing...');
-      for(const m of imp){try{await apiCall({action:'save',comic:m});}catch(e){}}
-      await loadFromSheets();toast(`${imp.length} komik imported!`,'success');
-    }catch(e){toast('Import gagal: '+e.message);}
+
+function selectAnilistManga(el) {
+  const title = el.dataset.title;
+  const cover = el.dataset.cover;
+  const year = el.dataset.year;
+  const chapters = el.dataset.chapters;
+  const volumes = el.dataset.volumes;
+  const genres = el.dataset.genres;
+  const author = el.dataset.author;
+  const anilistId = el.dataset.id;
+  
+  document.getElementById('f-title').value = title;
+  document.getElementById('f-year').value = year;
+  document.getElementById('f-chapters').value = chapters !== '?' ? chapters : '';
+  document.getElementById('f-volumes').value = volumes !== '?' ? volumes : '';
+  document.getElementById('f-genre').value = genres;
+  document.getElementById('f-author').value = author;
+  document.getElementById('f-cover').value = cover;
+  document.getElementById('f-anilist-id').value = anilistId;
+  document.getElementById('anilist-search').value = title;
+  
+  updateCoverPreview(cover, title);
+  document.getElementById('anilist-dd').style.display = 'none';
+}
+
+function updateCoverPreview(url, title) {
+  const box = document.getElementById('poster-box');
+  const letter = (title || '?').charAt(0).toUpperCase();
+  if (url && url !== 'null') {
+    box.innerHTML = `<img class="poster-ph" style="width:90px;height:135px;object-fit:cover;border-radius:2px" src="${url}" onerror="this.outerHTML='<div class=poster-ph style=display:flex;align-items:center;justify-content:center>${letter}</div>';">`;
+  } else {
+    box.innerHTML = `<div class="poster-ph" style="width:90px;height:135px;display:flex;align-items:center;justify-content:center;background:var(--surface2)">${letter}</div>`;
+  }
+}
+
+function clearAnilist() {
+  document.getElementById('anilist-search').value = '';
+  document.getElementById('f-cover').value = '';
+  document.getElementById('f-anilist-id').value = '';
+  document.getElementById('anilist-dd').style.display = 'none';
+  updateCoverPreview('', document.getElementById('f-title').value);
+}
+
+// Add poster box to modal
+const posterBoxHtml = `<div class="poster-box" id="poster-box" style="margin-right:1rem"><div class="poster-ph" style="width:90px;height:135px;display:flex;align-items:center;justify-content:center;background:var(--surface2)">?</div></div>`;
+const addLayoutDiv = document.querySelector('.add-layout');
+if (!addLayoutDiv) {
+  const modalBody = document.querySelector('.modal-body .form-grid');
+  if (modalBody) {
+    modalBody.insertAdjacentHTML('beforebegin', `<div class="add-layout" style="display:flex;gap:1rem;margin-bottom:1rem">${posterBoxHtml}<div style="flex:1"></div></div>`);
+  }
+}
+
+// ==================== CORE FUNCTIONS ====================
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function saveEntry() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) {
+    showToast('Please enter a title', true);
+    return;
+  }
+  
+  const entry = {
+    id: editingId || Date.now(),
+    title: title,
+    type: document.getElementById('f-type').value,
+    year: parseInt(document.getElementById('f-year').value) || new Date().getFullYear(),
+    status: document.getElementById('f-status').value,
+    genre: document.getElementById('f-genre').value || '',
+    author: document.getElementById('f-author').value || '',
+    chapters: parseInt(document.getElementById('f-chapters').value) || 0,
+    currentChapter: parseInt(document.getElementById('f-current-chapter').value) || 0,
+    volumes: document.getElementById('f-volumes').value || '',
+    rating: currentRating,
+    notes: document.getElementById('f-notes').value || '',
+    cover: document.getElementById('f-cover').value || '',
+    anilistId: document.getElementById('f-anilist-id').value || '',
+    added: editingId ? (mediaData.find(x => x.id === editingId)?.added || Date.now()) : Date.now()
   };
-  reader.readAsText(file);e.target.value='';
+  
+  if (editingId) {
+    const idx = mediaData.findIndex(x => x.id === editingId);
+    if (idx > -1) mediaData[idx] = entry;
+  } else {
+    mediaData.push(entry);
+  }
+  
+  saveToStorage();
+  renderMedia();
+  closeModal();
+  showToast(editingId ? 'Updated!' : 'Saved!');
 }
 
-// ── RENDER ────────────────────────────────────────────────
-const SL={reading:'Reading',completed:'Completed',plan:'Plan to Read',paused:'On Hold',dropped:'Dropped'};
-const SC={reading:'badge-reading',completed:'badge-completed',plan:'badge-plan',paused:'badge-paused',dropped:'badge-dropped'};
-const SS2={reading:'stripe-reading',completed:'stripe-completed',plan:'stripe-plan',paused:'stripe-paused',dropped:'stripe-dropped'};
-const FC={Manga:'fmt-manga',Manhwa:'fmt-manhwa',Manhua:'fmt-manhua'};
-const sdColors={reading:'var(--teal)',completed:'var(--amber)',plan:'var(--blue)',paused:'var(--text-dim)',dropped:'var(--red)'};
-function rs(r){return[1,2,3,4,5].map(i=>`<span class="star${i<=r?' filled':''}">★</span>`).join('');}
-
-function getFiltered(){
-  let d=[...data];
-  if(fStatus!=='all')d=d.filter(x=>x.status===fStatus);
-  if(fFormat!=='all')d=d.filter(x=>x.format===fFormat);
-  if(fGenre!=='all')d=d.filter(x=>x.genre&&x.genre.toLowerCase().includes(fGenre.toLowerCase()));
-  const q=document.getElementById('search-input').value.toLowerCase().trim();
-  if(q)d=d.filter(x=>x.title.toLowerCase().includes(q)||(x.author&&x.author.toLowerCase().includes(q))||(x.genre&&x.genre.toLowerCase().includes(q)));
-  const sort=document.getElementById('sort-sel').value;
-  if(sort==='rating')d.sort((a,b)=>b.rating-a.rating||b.score-a.score);
-  else if(sort==='title')d.sort((a,b)=>a.title.localeCompare(b.title));
-  else if(sort==='chapter')d.sort((a,b)=>b.chRead-a.chRead);
-  else if(sort==='updated')d.sort((a,b)=>b.updated-a.updated);
-  else d.sort((a,b)=>b.added-a.added);
-  return d;
+function getFiltered() {
+  let data = [...mediaData];
+  
+  if (filterSt !== 'all') data = data.filter(x => x.status === filterSt);
+  if (filterTy !== 'all') data = data.filter(x => x.type === filterTy);
+  
+  const q = document.getElementById('search-input').value.toLowerCase();
+  if (q) {
+    data = data.filter(x => 
+      x.title.toLowerCase().includes(q) || 
+      (x.author && x.author.toLowerCase().includes(q)) ||
+      (x.genre && x.genre.toLowerCase().includes(q))
+    );
+  }
+  
+  const sort = document.getElementById('sort-select').value;
+  if (sort === 'rating') data.sort((a, b) => b.rating - a.rating);
+  else if (sort === 'title') data.sort((a, b) => a.title.localeCompare(b.title));
+  else data.sort((a, b) => b.added - a.added);
+  
+  return data;
 }
 
-function bgFor(id){const cols=['#1a1a2e','#0d1b2a','#1a1f2e','#1f1a2e','#1a2a1f','#2a1a1a'];return cols[id%cols.length];}
+function renderMedia() {
+  updateStats();
+  
+  const data = getFiltered();
+  const container = document.getElementById('media-container');
+  
+  if (!data.length) {
+    container.innerHTML = '<div class="empty">📭 No manga found<br><small>Add your first manga using the + button</small></div>';
+    return;
+  }
+  
+  container.innerHTML = `<div class="media-grid">${data.map(m => cardHTML(m)).join('')}</div>`;
+}
 
-function cardHTML(m){
-  const hp=m.cover&&m.cover.trim()!='';
-  const letter=m.title.charAt(0).toUpperCase();
-  const pct=m.chTotal>0?Math.min(100,Math.round(m.chRead/m.chTotal*100)):0;
-  const chLabel=m.chTotal>0?`Ch.${m.chRead}/${m.chTotal}`:(m.chRead>0?`Ch.${m.chRead}`:'');
-  return`<div class="manga-card" onclick="showDetail(${m.id})">
-    ${hp?`<img class="manga-cover" src="${m.cover}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="cover-ph" style="background:${bgFor(m.id)};display:none"><span class="cover-ph-letter">${letter}</span></div>`:`<div class="cover-ph" style="background:${bgFor(m.id)}"><span class="cover-ph-letter">${letter}</span></div>`}
-    <div class="status-stripe ${SS2[m.status]||'stripe-plan'}"></div>
-    <span class="card-badge ${SC[m.status]||'badge-plan'}">${SL[m.status]||m.status}</span>
-    <div class="card-info">
-      <div class="card-title">${m.title}</div>
-      <div class="card-meta">
-        <span class="${FC[m.format]||'fmt-manga'} card-fmt">${m.format}</span>
-        ${m.year?`<span>${m.year}</span>`:''}
+function cardHTML(m) {
+  const letter = m.title.charAt(0).toUpperCase();
+  const progress = m.chapters ? Math.round((m.currentChapter / m.chapters) * 100) : 0;
+  const typeIcons = { Manga: '📘', Manhwa: '📱', Manhua: '📙', Comic: '🇺🇸' };
+  const statusIcons = { reading: '📖', completed: '✅', plan: '📋', dropped: '⛔' };
+  
+  return `
+    <div class="media-card" onclick="showDetail(${m.id})">
+      ${m.cover ? `<img class="card-poster" src="${m.cover}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` : ''}
+      <div class="poster-placeholder" style="${m.cover ? 'display:none' : 'display:flex'}">${letter}</div>
+      <div class="card-badge">${statusIcons[m.status] || '📚'}</div>
+      <div class="card-info">
+        <div class="card-title">${m.title}</div>
+        <div class="card-meta">${typeIcons[m.type] || '📘'} ${m.type} · ${m.year || '?'}</div>
+        <div class="card-meta">📖 Ch ${m.currentChapter || 0}/${m.chapters || '?'}</div>
+        ${m.rating ? `<div class="star-row">${renderStars(m.rating)}</div>` : ''}
+        ${progress > 0 && progress < 100 ? `<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
       </div>
-      ${chLabel?`<div class="ch-progress"><span>${chLabel}</span>${pct>0?`<span>${pct}%</span>`:''}</div>
-      ${pct>0?`<div class="ch-bar"><div class="ch-fill" style="width:${pct}%;background:${sdColors[m.status]||'var(--teal)'}"></div></div>`:''}`:''}
-      ${m.rating?`<div class="star-row">${rs(m.rating)}</div>`:''}
     </div>
-  </div>`;
+  `;
 }
 
-function listHTML(m){
-  const hp=m.cover&&m.cover.trim()!='';
-  const letter=m.title.charAt(0).toUpperCase();
-  const pct=m.chTotal>0?Math.min(100,Math.round(m.chRead/m.chTotal*100)):0;
-  return`<div class="list-item" onclick="showDetail(${m.id})">
-    <div class="status-stripe ${SS2[m.status]||'stripe-plan'}" style="position:absolute;left:0;top:0;bottom:0;width:3px"></div>
-    <div class="list-thumb">${hp?`<img src="${m.cover}" loading="lazy" onerror="this.textContent='${letter}'">`:`${letter}`}</div>
-    <div class="list-body">
-      <div class="list-title">${m.title}</div>
-      <div class="list-detail">
-        <span class="${FC[m.format]||'fmt-manga'} card-fmt">${m.format}</span>
-        ${m.author?`<span>· ${m.author}</span>`:''}
-        ${m.chRead>0?`<span>· Ch.${m.chRead}${m.chTotal>0?'/'+m.chTotal:''}</span>`:''}
-        ${m.genre?`<span>· ${m.genre.split(',')[0].trim()}</span>`:''}
-      </div>
-      ${m.rating?`<div class="star-row" style="margin-top:.3rem">${rs(m.rating)}</div>`:''}
-      ${pct>0?`<div class="ch-bar" style="margin-top:.35rem;max-width:200px"><div class="ch-fill" style="width:${pct}%;background:${sdColors[m.status]||'var(--teal)'}"></div></div>`:''}
-    </div>
-    <div class="list-actions">
-      <span class="card-badge ${SC[m.status]||'badge-plan'}" style="position:static">${SL[m.status]||m.status}</span>
-    </div>
-  </div>`;
+function renderStars(rating) {
+  return [1,2,3,4,5].map(i => `<span style="color:${i <= rating ? 'var(--gold)' : 'var(--text-dim)'}">★</span>`).join('');
 }
 
-function renderList(){
-  updateTopStats();updateCounts();updateTagCloud();updateActiveNav();
-  const d=getFiltered();
-  const c=document.getElementById('list-container');
-  if(!d.length){c.innerHTML='<div class="empty"><div class="empty-icon">本</div><div class="empty-title">Tidak ada komik</div><div class="empty-sub">Tambah komik pertamamu atau ubah filter</div></div>';return;}
-  c.innerHTML=viewMode==='grid'?`<div class="manga-grid">${d.map(cardHTML).join('')}</div>`:`<div class="manga-list">${d.map(listHTML).join('')}</div>`;
-  document.getElementById('vbtn-grid').className='vbtn'+(viewMode==='grid'?' active':'');
-  document.getElementById('vbtn-list').className='vbtn'+(viewMode==='list'?' active':'');
+function updateStats() {
+  document.getElementById('stat-total').textContent = mediaData.length;
+  document.getElementById('stat-reading').textContent = mediaData.filter(x => x.status === 'reading').length;
+  document.getElementById('stat-completed').textContent = mediaData.filter(x => x.status === 'completed').length;
+  document.getElementById('stat-plan').textContent = mediaData.filter(x => x.status === 'plan').length;
 }
 
-function updateTopStats(){
-  document.getElementById('sv-total').textContent=data.length;
-  document.getElementById('sv-reading').textContent=data.filter(x=>x.status==='reading').length;
-  document.getElementById('sv-completed').textContent=data.filter(x=>x.status==='completed').length;
-  document.getElementById('sv-plan').textContent=data.filter(x=>x.status==='plan').length;
-  document.getElementById('sv-paused').textContent=data.filter(x=>x.status==='paused').length;
-}
-function updateCounts(){
-  const sts=['all','reading','completed','plan','paused','dropped'];
-  sts.forEach(s=>{const e=document.getElementById('nc-'+s);if(e)e.textContent=s==='all'?data.length:data.filter(x=>x.status===s).length;});
-  ['Manga','Manhwa','Manhua'].forEach(f=>{const e=document.getElementById('cnt-'+f);if(e)e.textContent=data.filter(x=>x.format===f).length;});
-  document.getElementById('cnt-all').textContent=data.length;
-}
-function updateTagCloud(){
-  const g=new Set();data.forEach(m=>{if(m.genre)m.genre.split(',').forEach(x=>g.add(x.trim()));});
-  document.getElementById('tag-cloud').innerHTML=[...g].sort().slice(0,18).map(x=>`<button class="tag${fGenre===x?' active':''}" onclick="toggleGenre('${x.replace(/'/g,"\\'")}')">
-    ${x}${fGenre===x?' ✕':''}</button>`).join('');
-}
-function updateActiveNav(){
-  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
-  document.getElementById('nav-'+fStatus)?.classList.add('active');
-  document.querySelectorAll('.stat-cell').forEach(e=>e.classList.remove('active'));
-  document.getElementById('sc-'+fStatus)?.classList.add('active');
-  const fmts=['all','Manga','Manhwa','Manhua'];
-  fmts.forEach(f=>{document.getElementById('fmt-'+f)?.classList.toggle('active',fFormat===f);});
-  const titles={all:'All <em>Komik</em>',reading:'Sedang <em>Dibaca</em>',completed:'<em>Selesai</em>',plan:'Plan to <em>Read</em>',paused:'On <em>Hold</em>',dropped:'<em>Dropped</em>'};
-  let t=titles[fStatus]||'All <em>Komik</em>';
-  if(fFormat!=='all')t+=` · <span style="color:var(--red)">${fFormat}</span>`;
-  if(fGenre!=='all')t+=` · <span style="color:var(--teal)">${fGenre}</span>`;
-  document.getElementById('page-title').innerHTML=t;
+function filterStatus(status) {
+  filterSt = status;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + status)?.classList.add('active');
+  if (status === 'all') document.getElementById('nav-all')?.classList.add('active');
+  renderMedia();
 }
 
-function filterStatus(s,el){fStatus=s;renderList();}
-function filterFmt(f,el){fFormat=f;renderList();}
-function toggleGenre(g){fGenre=fGenre===g?'all':g;renderList();}
-function setView(v){viewMode=v;renderList();}
+function filterType(type) {
+  filterTy = type;
+  document.querySelectorAll('[id^="nav-type-"]').forEach(el => el.classList.remove('active'));
+  if (type === 'all') document.getElementById('nav-type-all')?.classList.add('active');
+  else document.getElementById('nav-type-' + type.toLowerCase())?.classList.add('active');
+  renderMedia();
+}
 
-// ── MODAL ─────────────────────────────────────────────────
-function openModal(id=null){
-  editingId=id;currentRating=0;
-  const m=id?data.find(x=>x.id===id):null;
-  document.getElementById('modal-heading').textContent=m?'Edit Komik':'Tambah Komik';
-  document.getElementById('f-title').value=m?m.title:'';
-  document.getElementById('f-format').value=m?m.format:'Manga';
-  document.getElementById('f-status').value=m?m.status:'plan';
-  document.getElementById('f-author').value=m?m.author:'';
-  document.getElementById('f-genre').value=m?m.genre:'';
-  document.getElementById('f-ch-read').value=m?m.chRead:'';
-  document.getElementById('f-ch-total').value=m?m.chTotal:'';
-  document.getElementById('f-score').value=m?m.score||'':'';
-  document.getElementById('f-cover').value=m?m.cover||'':'';
-  document.getElementById('f-year').value=m?m.year||'':'';
-  document.getElementById('f-notes').value=m?m.notes:'';
-  document.getElementById('ch-auto-label').textContent='';
-  setRating(m?m.rating:0);
-  previewCover(m?m.cover||'':'',m?m.title:'');
+function openModal(id) {
+  editingId = id || null;
+  const m = id ? mediaData.find(x => x.id === id) : null;
+  
+  document.getElementById('modal-heading').textContent = m ? 'Edit Manga' : 'Add New Manga';
+  document.getElementById('f-title').value = m ? m.title : '';
+  document.getElementById('f-type').value = m ? m.type : 'Manga';
+  document.getElementById('f-year').value = m ? m.year : '';
+  document.getElementById('f-status').value = m ? m.status : 'plan';
+  document.getElementById('f-genre').value = m ? m.genre : '';
+  document.getElementById('f-author').value = m ? m.author : '';
+  document.getElementById('f-chapters').value = m ? m.chapters : '';
+  document.getElementById('f-current-chapter').value = m ? m.currentChapter : '';
+  document.getElementById('f-volumes').value = m ? m.volumes : '';
+  document.getElementById('f-notes').value = m ? m.notes : '';
+  document.getElementById('f-cover').value = m ? m.cover : '';
+  document.getElementById('f-anilist-id').value = m ? m.anilistId : '';
+  
+  setRating(m ? m.rating : 0);
+  updateCoverPreview(m ? m.cover : '', m ? m.title : '');
   document.getElementById('modal-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('f-title').focus(),80);
 }
-function closeModal(){document.getElementById('modal-overlay').classList.remove('open');editingId=null;}
-function setRating(v){currentRating=v;document.querySelectorAll('#star-input .star-ibtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)<=v));}
-function updateCoverLetter(){const t=document.getElementById('f-title').value;if(!document.getElementById('f-cover').value)previewCover('',t);}
-function previewCover(url,title){
-  const box=document.getElementById('cover-preview-box');
-  const letter=((title||document.getElementById('f-title').value)||'?').charAt(0).toUpperCase();
-  if(url&&url.startsWith('http')){
-    box.innerHTML=`<img style="width:80px;height:107px;object-fit:cover;border:1px solid var(--border)" src="${url}" onerror="this.outerHTML='<div class=cover-ph-sm style=display:flex;align-items:center;justify-content:center>${letter}</div>'">`;
-  }else{
-    box.innerHTML=`<div class="cover-ph-sm" style="display:flex;align-items:center;justify-content:center">${letter}</div>`;
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function setRating(v) {
+  currentRating = v;
+  document.querySelectorAll('.star-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.v) <= v));
+}
+
+function showDetail(id) {
+  const m = mediaData.find(x => x.id === id);
+  if (!m) return;
+  alert(`📖 ${m.title}\n\nStatus: ${m.status}\nAuthor: ${m.author || '-'}\nProgress: ${m.currentChapter || 0}/${m.chapters || '?'} chapters\nRating: ${m.rating}/5\n\nNotes: ${m.notes || '-'}`);
+}
+
+// Close dropdown on click outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.tmdb-wrap')) {
+    document.getElementById('anilist-dd').style.display = 'none';
   }
-}
-function autoCalcCh(){
-  const r=parseInt(document.getElementById('f-ch-read').value)||0;
-  const t=parseInt(document.getElementById('f-ch-total').value)||0;
-  const lbl=document.getElementById('ch-auto-label');
-  if(r>0&&t>0){const pct=Math.min(100,Math.round(r/t*100));lbl.textContent=`→ ${pct}%`;}
-  else lbl.textContent='';
-}
-
-async function saveEntry(){
-  if(isSaving)return;
-  const title=document.getElementById('f-title').value.trim();
-  if(!title){toast('Judul tidak boleh kosong');return;}
-  const existing=editingId?data.find(x=>x.id===editingId):null;
-  const entry={
-    id:editingId||Date.now(),title,
-    format:document.getElementById('f-format').value,
-    status:document.getElementById('f-status').value,
-    author:document.getElementById('f-author').value.trim(),
-    genre:document.getElementById('f-genre').value.trim(),
-    chRead:parseInt(document.getElementById('f-ch-read').value)||0,
-    chTotal:parseInt(document.getElementById('f-ch-total').value)||0,
-    score:parseFloat(document.getElementById('f-score').value)||0,
-    rating:currentRating,
-    cover:document.getElementById('f-cover').value.trim(),
-    year:parseInt(document.getElementById('f-year').value)||0,
-    notes:document.getElementById('f-notes').value.trim(),
-    added:existing?existing.added:Date.now(),
-    updated:Date.now()
-  };
-  isSaving=true;
-  const btn=document.getElementById('btn-save');btn.disabled=true;btn.textContent='Menyimpan…';
-  setSS('syncing','Saving…');
-  try{
-    await apiCall({action:'save',comic:entry});
-    if(editingId){const i=data.findIndex(x=>x.id===editingId);if(i>-1)data[i]=entry;}
-    else data.push(entry);
-    renderList();closeModal();
-    setSS('online','Saved · '+new Date().toLocaleTimeString('id-ID'));
-    toast(editingId?'Updated!':'Ditambahkan!','success');
-  }catch(e){setSS('error','Gagal');toast('Error: '+e.message);}
-  finally{isSaving=false;btn.disabled=false;btn.textContent='Simpan';}
-}
-
-// ── DETAIL ────────────────────────────────────────────────
-function showDetail(id){
-  const m=data.find(x=>x.id===id);if(!m)return;
-  const letter=m.title.charAt(0).toUpperCase();
-  const hp=m.cover&&m.cover.trim()!='';
-  document.getElementById('d-title').textContent=m.title;
-  document.getElementById('d-meta').textContent=`${m.format} · ${m.year||'—'} · ${m.author||'Unknown author'}`;
-  document.getElementById('d-cover').innerHTML=hp?`<img class="detail-cover" src="${m.cover}" onerror="this.outerHTML='<div class=detail-cover-ph>${letter}</div>'">`:`<div class="detail-cover-ph">${letter}</div>`;
-  const pct=m.chTotal>0?Math.min(100,Math.round(m.chRead/m.chTotal*100)):0;
-  document.getElementById('detail-body').innerHTML=`
-    <div style="display:flex;gap:1rem;align-items:flex-end;margin-bottom:1.25rem">
-      ${m.rating?`<div class="rating-big">${m.rating}.0</div><div>${rs(m.rating)}<div style="font-family:var(--mono);font-size:.65rem;color:var(--text-dim);margin-top:.2rem">rating personal</div></div>`:'<span style="color:var(--text-dim);font-size:.82rem">Belum dirating</span>'}
-      ${m.score?`<div style="margin-left:auto;text-align:right"><div style="font-family:var(--serif);font-size:1.5rem;color:var(--teal)">${m.score}</div><div style="font-family:var(--mono);font-size:.6rem;color:var(--text-dim)">MAL/AL score</div></div>`:''}
-    </div>
-    ${m.chRead>0||m.chTotal>0?`<div style="margin-bottom:1.25rem">
-      <div style="font-family:var(--mono);font-size:.68rem;color:var(--text-dim);margin-bottom:.4rem">PROGRESS — Ch.${m.chRead}${m.chTotal>0?' / '+m.chTotal:''} ${pct>0?'('+pct+'%)':''}</div>
-      <div class="ch-bar" style="height:4px"><div class="ch-fill" style="width:${pct||100}%;background:${sdColors[m.status]||'var(--teal)'}"></div></div>
-    </div>`:''}
-    <div style="margin-bottom:1rem">
-      <div class="detail-row"><span class="detail-key">Status</span><span class="card-badge ${SC[m.status]}" style="position:static">${SL[m.status]}</span></div>
-      <div class="detail-row"><span class="detail-key">Format</span><span class="detail-val"><span class="${FC[m.format]} card-fmt">${m.format}</span></span></div>
-      ${m.author?`<div class="detail-row"><span class="detail-key">Author</span><span class="detail-val">${m.author}</span></div>`:''}
-      ${m.genre?`<div class="detail-row"><span class="detail-key">Genre</span><span class="detail-val">${m.genre}</span></div>`:''}
-      ${m.chTotal>0?`<div class="detail-row"><span class="detail-key">Total Chapter</span><span class="detail-val">${m.chTotal} chapters</span></div>`:''}
-    </div>
-    ${m.notes?`<div style="background:var(--ink3);border-left:2px solid var(--red);padding:.65rem .9rem;font-size:.82rem;color:var(--text-muted);line-height:1.6;margin-bottom:1rem;font-style:italic">"${m.notes}"</div>`:''}
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;padding-top:.5rem">
-      <button class="btn btn-primary" onclick="closeDetail();openModal(${m.id})">Edit</button>
-      ${m.status==='reading'&&m.chRead>=0?`<button class="btn" onclick="plusChapter(${m.id})" style="border-color:var(--teal);color:var(--teal)">+1 Chapter</button>`:''}
-      <button class="btn" onclick="deleteEntry(${m.id})" style="border-color:rgba(232,52,74,.4);color:var(--red);margin-left:auto">Hapus</button>
-    </div>`;
-  document.getElementById('detail-overlay').classList.add('open');
-}
-function closeDetail(){document.getElementById('detail-overlay').classList.remove('open');}
-
-async function plusChapter(id){
-  const m=data.find(x=>x.id===id);if(!m)return;
-  m.chRead=(m.chRead||0)+1;m.updated=Date.now();
-  if(m.chTotal>0&&m.chRead>=m.chTotal){m.status='completed';m.chRead=m.chTotal;}
-  try{
-    await apiCall({action:'save',comic:m});
-    renderList();closeDetail();
-    toast(m.status==='completed'?`🎉 Tamat!`:`Ch.${m.chRead}${m.chTotal>0?'/'+m.chTotal:''}  ✓`,'success');
-  }catch(e){toast('Gagal update',);}
-}
-
-async function deleteEntry(id){
-  if(!confirm('Hapus komik ini?'))return;
-  try{
-    await apiCall({action:'delete',id});
-    data=data.filter(x=>x.id!==id);renderList();closeDetail();toast('Dihapus');
-  }catch(e){toast('Gagal hapus');}
-}
-
-// ── STATS PAGE ────────────────────────────────────────────
-function showPage(page){
-  document.getElementById('main-content').classList.toggle('hidden',page!=='main');
-  document.getElementById('stats-page').classList.toggle('active',page==='stats');
-  if(page==='stats')renderStats();
-}
-
-function renderStats(){
-  const total=data.length,reading=data.filter(x=>x.status==='reading').length;
-  const completed=data.filter(x=>x.status==='completed').length;
-  const rated=data.filter(x=>x.rating>0);
-  const avg=rated.length?(rated.reduce((s,x)=>s+x.rating,0)/rated.length).toFixed(1):'—';
-  const totalCh=data.reduce((s,x)=>s+(x.chRead||0),0);
-  const manga=data.filter(x=>x.format==='Manga').length;
-  const manhwa=data.filter(x=>x.format==='Manhwa').length;
-  const manhua=data.filter(x=>x.format==='Manhua').length;
-  const ongoing=data.filter(x=>x.chTotal===0&&x.status==='reading').length;
-
-  document.getElementById('stats-cards').innerHTML=[
-    {l:'Total Koleksi',v:total,s:'judul'},
-    {l:'Sedang Dibaca',v:reading,s:'aktif'},
-    {l:'Selesai',v:completed,s:'tamat'},
-    {l:'Total Chapter',v:totalCh.toLocaleString(),s:'chapter dibaca'},
-    {l:'Avg Rating',v:avg,s:'dari 5 bintang'},
-    {l:'Ongoing',v:ongoing,s:'belum tamat'},
-  ].map(x=>`<div class="s-card"><div class="s-card-lbl">${x.l}</div><div class="s-card-val">${x.v}</div><div class="s-card-sub">${x.s}</div></div>`).join('');
-
-  // Genre
-  const gC={};data.forEach(m=>{if(m.genre)m.genre.split(',').forEach(g=>{const t=g.trim();if(t)gC[t]=(gC[t]||0)+1;});});
-  const gS=Object.entries(gC).sort((a,b)=>b[1]-a[1]).slice(0,8);const gM=gS[0]?.[1]||1;
-  document.getElementById('chart-genre').innerHTML=gS.length?gS.map(([g,c])=>`<div class="s-bar-row"><div class="s-bar-lbl">${g}</div><div class="s-bar-track"><div class="s-bar-fill" style="width:${Math.round(c/gM*100)}%;background:var(--red)"></div></div><div class="s-bar-val">${c}</div></div>`).join(''):'<span style="font-family:var(--mono);font-size:.75rem;color:var(--text-dim)">Belum ada data</span>';
-
-  // Status
-  const stNames={reading:'Reading',completed:'Completed',plan:'Plan',paused:'On Hold',dropped:'Dropped'};
-  const stColors={reading:'var(--teal)',completed:'var(--amber)',plan:'var(--blue)',paused:'var(--text-dim)',dropped:'var(--red)'};
-  document.getElementById('chart-status').innerHTML=Object.entries(stNames).map(([s,n])=>{
-    const count=data.filter(x=>x.status===s).length;
-    const pct=total?Math.round(count/total*100):0;
-    return`<div class="status-row"><div class="status-left"><span style="width:7px;height:7px;border-radius:50%;background:${stColors[s]};flex-shrink:0;display:inline-block"></span>${n}</div><div style="display:flex;align-items:center;gap:.5rem"><span style="font-family:var(--mono);font-size:.7rem;color:var(--text-dim)">${pct}%</span><span style="font-family:var(--serif);font-size:1.1rem;color:var(--text)">${count}</span></div></div>`;
-  }).join('');
-
-  // Author
-  const aC={};data.forEach(m=>{if(m.author&&m.author.trim())aC[m.author.trim()]=(aC[m.author.trim()]||0)+1;});
-  const aS=Object.entries(aC).sort((a,b)=>b[1]-a[1]).slice(0,6);const aM=aS[0]?.[1]||1;
-  document.getElementById('chart-author').innerHTML=aS.length?aS.map(([a,c])=>`<div class="s-bar-row"><div class="s-bar-lbl">${a}</div><div class="s-bar-track"><div class="s-bar-fill" style="width:${Math.round(c/aM*100)}%;background:var(--teal)"></div></div><div class="s-bar-val">${c}</div></div>`).join(''):'<span style="font-family:var(--mono);font-size:.75rem;color:var(--text-dim)">Tambah data author dulu</span>';
-
-  // Format
-  const fmtD=[{n:'Manga',c:manga,col:'var(--red)'},{n:'Manhwa',c:manhwa,col:'var(--teal)'},{n:'Manhua',c:manhua,col:'var(--amber)'}];
-  const fM=Math.max(...fmtD.map(x=>x.c),1);
-  document.getElementById('chart-format').innerHTML=fmtD.map(x=>`<div class="s-bar-row"><div class="s-bar-lbl">${x.n}</div><div class="s-bar-track"><div class="s-bar-fill" style="width:${Math.round(x.c/fM*100)}%;background:${x.col}"></div></div><div class="s-bar-val">${x.c}</div></div>`).join('');
-
-  // Rating distribution
-  const rD=[1,2,3,4,5].map(r=>({r,c:data.filter(x=>x.rating===r).length}));const rM=Math.max(...rD.map(x=>x.c),1);
-  document.getElementById('chart-rating').innerHTML=rD.map(x=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-    <div style="font-family:var(--mono);font-size:.6rem;color:var(--text-dim)">${x.c}</div>
-    <div style="width:100%;background:var(--amber);border-radius:1px 1px 0 0;height:${Math.round(x.c/rM*60)}px;min-height:2px;transition:.4s"></div>
-    <div style="font-family:var(--mono);font-size:.65rem;color:var(--text-dim)">${x.r}★</div>
-  </div>`).join('');
-}
-
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeDetail();}
 });
 
-setInterval(loadFromSheets,120000);
-loadFromSheets();
+// Initialize
+loadFromStorage();
 </script>
 </body>
 </html>
