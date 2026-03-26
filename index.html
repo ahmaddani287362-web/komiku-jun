@@ -8,97 +8,94 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{--gold:#C9A84C;--gold-light:#E8C97A;--gold-dim:#8B6E30;--bg:#0A0A0C;--surface:#111116;--surface2:#18181F;--surface3:#1F1F28;--border:#2A2A35;--border-soft:#222230;--text:#F0EEE8;--text-muted:#8A8899;--text-dim:#55546A;--red:#E05555;--green:#5EC47A;--blue:#5B8DEF;--purple:#9B6BF0;--pink:#E86F9C;--orange:#E8A75C;--serif:'Cormorant Garamond',serif;--sans:'DM Sans',sans-serif}
-  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
-  
-  /* Header Styles */
-  header{position:sticky;top:0;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-soft);padding:0 2rem;height:70px;display:flex;align-items:center;justify-content:space-between}
-  .logo{font-family:var(--serif);font-size:1.6rem;font-weight:300;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
-  .logo span{color:var(--text-dim);font-style:italic}
-  .tagline{font-family:var(--sans);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);border-left:1px solid var(--border);padding-left:1rem}
-  .tagline em{color:var(--gold-light)}
-  .btn{font-family:var(--sans);font-size:.75rem;font-weight:500;padding:.45rem 1rem;border-radius:2px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:.2s}
-  .btn:hover{border-color:var(--gold-dim);color:var(--gold)}
-  .btn-primary{background:linear-gradient(115deg, var(--gold) 0%, var(--gold-dim) 100%);border-color:transparent;color:#0A0A0C}
-  .btn-primary:hover{background:linear-gradient(115deg, var(--gold-light) 0%, var(--gold) 100%)}
-  
-  /* Sync Bar */
-  .sync-bar{background:var(--surface);border-bottom:1px solid var(--border-soft);padding:.3rem 2rem;display:flex;align-items:center;gap:.6rem;font-size:.7rem;color:var(--text-dim)}
-  .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim)}
-  .sync-dot.online{background:var(--green)}
-  .sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite}
-  .sync-dot.error{background:var(--red)}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+  .sync-bar{background:var(--surface);border-bottom:1px solid var(--border-soft);padding:.4rem 2.5rem;display:flex;align-items:center;gap:.6rem;font-size:.75rem;color:var(--text-dim)}
+  .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);flex-shrink:0}
+  .sync-dot.online{background:var(--green)}.sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite}.sync-dot.error{background:var(--red)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   
-  /* Stats Bar */
-  .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border-soft)}
-  .stat-item{background:var(--surface);padding:1rem 1.5rem;cursor:pointer;transition:.2s}
+  header{position:sticky;top:0;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-soft);padding:0 2.5rem;height:80px;display:flex;align-items:center;justify-content:space-between}
+  .logo{font-family:var(--serif);font-size:1.9rem;font-weight:300;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 70%, #EEDBAA 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo span{color:var(--text-dim);font-style:italic;background:none;-webkit-background-clip:unset;color:var(--text-muted)}
+  .tagline{font-family:var(--sans);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);border-left:1px solid var(--border);padding-left:1rem}
+  .tagline em{color:var(--gold-light)}
+  .btn{font-family:var(--sans);font-size:.8rem;font-weight:500;padding:.55rem 1.35rem;border-radius:2px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:.2s}
+  .btn:hover{border-color:var(--gold-dim);color:var(--gold)}
+  .btn-primary{background:linear-gradient(115deg, var(--gold) 0%, var(--gold-dim) 100%);border-color:transparent;color:#0A0A0C}
+  .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border-soft);border-bottom:1px solid var(--border-soft)}
+  .stat-item{background:var(--surface);padding:1.5rem 2.5rem;cursor:pointer;transition:.2s}
   .stat-item:hover{background:var(--surface2)}
-  .stat-label{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
-  .stat-value{font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--text)}
-  
-  /* Main Layout */
-  main{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 110px)}
-  aside{background:var(--surface);border-right:1px solid var(--border-soft);padding:1.5rem 0;position:sticky;top:70px;height:calc(100vh - 70px);overflow-y:auto}
-  .sidebar-section{padding:0 1rem;margin-bottom:1.5rem}
-  .sidebar-title{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border-soft);padding-bottom:.4rem;margin-bottom:.6rem}
-  .nav-item{display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;cursor:pointer;color:var(--text-muted);font-size:.8rem}
+  .stat-label{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+  .stat-value{font-family:var(--serif);font-size:2.2rem;font-weight:300;color:var(--text)}
+  main{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 130px)}
+  aside{background:var(--surface);border-right:1px solid var(--border-soft);padding:2rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
+  .sidebar-section{padding:0 1.5rem;margin-bottom:2rem}
+  .sidebar-title{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border-soft);padding-bottom:.5rem;margin-bottom:.75rem}
+  .nav-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;cursor:pointer;color:var(--text-muted);font-size:.875rem}
   .nav-item:hover{background:var(--surface2);color:var(--text)}
   .nav-item.active{background:rgba(201,168,76,.08);color:var(--gold);border-left:2px solid var(--gold)}
-  .content{padding:1.5rem;background:var(--bg)}
-  .section-title{font-family:var(--serif);font-size:1.5rem;font-weight:300;margin-bottom:1rem}
+  .nav-count{margin-left:auto;font-size:.7rem;background:var(--surface2);padding:.15rem .5rem;border-radius:20px}
+  .content{padding:2rem 2.5rem;background:var(--bg)}
+  .section-title{font-family:var(--serif);font-size:1.75rem;font-weight:300;margin-bottom:1.5rem}
   .section-title em{color:var(--gold)}
-  
-  /* Search & Grid */
-  .search-row{display:flex;gap:.75rem;margin-bottom:1rem}
+  .search-row{display:flex;gap:.75rem;margin-bottom:1.5rem}
   .search-wrap{flex:1;position:relative}
-  .search-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.5rem 1rem .5rem 2rem;border-radius:2px;font-size:.8rem}
-  .search-icon{position:absolute;left:.6rem;top:50%;transform:translateY(-50%);font-size:.8rem}
-  select.filter-select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.5rem;border-radius:2px;font-size:.8rem}
-  .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem}
+  .search-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.65rem 1rem .65rem 2.75rem;border-radius:2px}
+  .search-icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%)}
+  select.filter-select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.65rem 1rem;border-radius:2px}
+  .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1.25rem}
   .media-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:2px;overflow:hidden;cursor:pointer;transition:.2s;position:relative}
   .media-card:hover{border-color:var(--gold-dim);transform:translateY(-2px)}
   .card-poster{width:100%;aspect-ratio:2/3;object-fit:cover}
-  .poster-placeholder{width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:2rem;color:var(--text-dim)}
-  .card-badge{position:absolute;top:.4rem;right:.4rem;font-size:.6rem;padding:.2rem .4rem;border-radius:2px;background:rgba(0,0,0,.7)}
-  .card-info{padding:.6rem}
-  .card-title{font-size:.75rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card-meta{font-size:.65rem;color:var(--text-dim)}
-  .star-row{display:flex;gap:.1rem;margin-top:.3rem}
-  .star{font-size:.6rem;color:var(--text-dim)}.star.filled{color:var(--gold)}
-  .progress-bar{height:2px;background:var(--border);margin-top:.4rem}
+  .poster-placeholder{width:100%;aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:3rem}
+  .card-badge{position:absolute;top:.6rem;right:.6rem;font-size:.65rem;padding:.25rem .5rem;border-radius:1px;background:rgba(0,0,0,.7)}
+  .card-info{padding:.75rem}
+  .card-title{font-size:.85rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-meta{font-size:.72rem;color:var(--text-dim)}
+  .star-row{display:flex;gap:.1rem;margin-top:.4rem}
+  .star{font-size:.75rem;color:var(--text-dim)}.star.filled{color:var(--gold)}
+  .progress-bar{height:2px;background:var(--border);margin-top:.6rem}
   .progress-fill{height:100%;background:var(--gold)}
-  
-  /* Modal */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:.2s}
   .modal-overlay.open{opacity:1;pointer-events:all}
-  .modal{background:var(--surface);border:1px solid var(--border);width:100%;max-width:650px;max-height:85vh;overflow-y:auto;border-radius:4px}
-  .modal-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center}
-  .modal-title{font-family:var(--serif);font-size:1.2rem;font-weight:300}
-  .modal-body{padding:1.2rem 1.5rem}
-  .tmdb-wrap{position:relative;margin-bottom:1rem}
-  .tmdb-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.5rem .8rem;border-radius:2px;font-size:.8rem}
-  .tmdb-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-top:none;max-height:250px;overflow-y:auto;display:none;z-index:50}
-  .tmdb-item{display:flex;gap:.6rem;padding:.5rem .8rem;cursor:pointer;border-bottom:1px solid var(--border-soft)}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:2px;width:100%;max-width:700px;max-height:85vh;overflow-y:auto}
+  .modal-header{padding:1.5rem 2rem;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center}
+  .modal-title{font-family:var(--serif);font-size:1.5rem;font-weight:300}
+  .modal-close{background:none;border:1px solid var(--border);color:var(--text-muted);width:32px;height:32px;border-radius:2px;cursor:pointer}
+  .modal-body{padding:1.5rem 2rem}
+  .tmdb-wrap{position:relative;margin-bottom:1.25rem}
+  .tmdb-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.65rem .9rem;border-radius:2px}
+  .tmdb-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-top:none;max-height:280px;overflow-y:auto;display:none;z-index:50}
+  .tmdb-item{display:flex;gap:.75rem;padding:.6rem .9rem;cursor:pointer;border-bottom:1px solid var(--border-soft)}
   .tmdb-item:hover{background:var(--surface3)}
-  .tmdb-thumb{width:32px;height:48px;object-fit:cover;border-radius:2px}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
-  .form-group{display:flex;flex-direction:column;gap:.3rem}
+  .tmdb-thumb{width:36px;height:54px;object-fit:cover}
+  .add-layout{display:flex;gap:1.25rem;margin-bottom:1.25rem}
+  .poster-box{flex-shrink:0}
+  .poster-ph{width:90px;height:135px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:2px;font-size:2rem}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .form-group{display:flex;flex-direction:column;gap:.4rem}
   .form-group.full{grid-column:1/-1}
-  label{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
-  input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.5rem .7rem;border-radius:2px;font-size:.8rem}
-  .star-rating{display:flex;gap:.2rem}
-  .star-btn{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text-dim)}
+  label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+  input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.65rem .9rem;border-radius:2px}
+  .star-rating{display:flex;gap:.25rem}
+  .star-btn{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-dim)}
   .star-btn.active{color:var(--gold)}
-  .poster-box{margin-right:1rem;flex-shrink:0}
-  .poster-ph{width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:2px;font-size:1.5rem}
-  .add-layout{display:flex;gap:1rem;margin-bottom:1rem;align-items:flex-start}
-  .modal-footer{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-soft)}
-  .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:1px solid var(--gold-dim);padding:.5rem 1rem;border-radius:2px;font-size:.8rem;z-index:500;opacity:0;transition:.2s}
+  .modal-footer{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-soft)}
+  .detail-poster{width:110px;height:165px;object-fit:cover;border-radius:2px}
+  .detail-poster-ph{width:110px;height:165px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:2px;font-size:2.5rem}
+  .detail-rating-big{font-family:var(--serif);font-size:3rem;font-weight:300;color:var(--gold)}
+  .detail-row{display:flex;justify-content:space-between;align-items:center;padding:.8rem 0;border-bottom:1px solid var(--border-soft)}
+  .detail-row:last-child{border-bottom:none}
+  .detail-key{color:var(--text-dim)}
+  .detail-val{color:var(--text);text-align:right}
+  .chapter-control{display:flex;align-items:center;gap:1rem;margin-top:.5rem}
+  .chapter-input{width:100px;background:var(--surface2);border:1px solid var(--border);color:var(--gold);padding:.5rem;border-radius:2px;text-align:center;font-size:1rem}
+  .update-chapter-btn{padding:.4rem 1rem;background:var(--gold);color:#0A0A0C;border:none;border-radius:2px;cursor:pointer;font-size:.75rem}
+  .toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface);border:1px solid var(--gold-dim);padding:.75rem 1.25rem;border-radius:2px;z-index:500;opacity:0;transition:.2s}
   .toast.show{opacity:1}
-  .toast.error{border-color:var(--red);color:var(--red)}
-  .empty{text-align:center;padding:3rem;color:var(--text-dim)}
-  
-  @media(max-width:700px){main{grid-template-columns:1fr}aside{display:none}.stats-bar{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.form-group.full{grid-column:1}}
+  .empty{text-align:center;padding:4rem;color:var(--text-dim)}
+  @media(max-width:900px){main{grid-template-columns:1fr}aside{display:none}.stats-bar{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -109,7 +106,7 @@
 </div>
 
 <header>
-  <div style="display:flex;align-items:baseline;gap:.8rem">
+  <div style="display:flex;align-items:baseline;gap:1rem">
     <div class="logo">Manga<span>Track</span></div>
     <div class="tagline">track your <em>manga</em> & <em>manhwa</em> journey</div>
   </div>
@@ -130,15 +127,15 @@
   <aside>
     <div class="sidebar-section">
       <div class="sidebar-title">Status</div>
-      <div class="nav-item active" id="nav-all" onclick="filterStatus('all')">📚 All Manga</div>
-      <div class="nav-item" id="nav-reading" onclick="filterStatus('reading')">📖 Reading</div>
-      <div class="nav-item" id="nav-completed" onclick="filterStatus('completed')">✅ Completed</div>
-      <div class="nav-item" id="nav-plan" onclick="filterStatus('plan')">📋 Plan to Read</div>
-      <div class="nav-item" id="nav-dropped" onclick="filterStatus('dropped')">⛔ Dropped</div>
+      <div class="nav-item active" id="nav-all" onclick="filterStatus('all')">📚 All Manga<span class="nav-count" id="cnt-all">0</span></div>
+      <div class="nav-item" id="nav-reading" onclick="filterStatus('reading')">📖 Reading<span class="nav-count" id="cnt-reading">0</span></div>
+      <div class="nav-item" id="nav-completed" onclick="filterStatus('completed')">✅ Completed<span class="nav-count" id="cnt-completed">0</span></div>
+      <div class="nav-item" id="nav-plan" onclick="filterStatus('plan')">📋 Plan to Read<span class="nav-count" id="cnt-plan">0</span></div>
+      <div class="nav-item" id="nav-dropped" onclick="filterStatus('dropped')">⛔ Dropped<span class="nav-count" id="cnt-dropped">0</span></div>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-title">Type</div>
-      <div class="nav-item" id="nav-type-all" onclick="filterType('all')">◈ All</div>
+      <div class="nav-item" id="nav-type-all" onclick="filterType('all')">◈ All Types</div>
       <div class="nav-item" id="nav-type-manga" onclick="filterType('Manga')">📘 Manga</div>
       <div class="nav-item" id="nav-type-manhwa" onclick="filterType('Manhwa')">📱 Manhwa</div>
       <div class="nav-item" id="nav-type-manhua" onclick="filterType('Manhua')">📙 Manhua</div>
@@ -146,13 +143,13 @@
   </aside>
 
   <div class="content">
-    <div class="section-title" id="section-title">My <em>Manga Collection</em></div>
+    <div class="section-title">My <em>Manga Collection</em></div>
     <div class="search-row">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input class="search-input" type="text" placeholder="Search manga, author, genre..." id="search-input" oninput="renderMedia()">
       </div>
-      <select id="sort-select" onchange="renderMedia()" class="filter-select">
+      <select class="filter-select" id="sort-select" onchange="renderMedia()">
         <option value="added">Recently Added</option>
         <option value="rating">Highest Rated</option>
         <option value="title">A → Z</option>
@@ -162,131 +159,85 @@
   </div>
 </main>
 
-<!-- Modal Add/Edit Manga -->
+<!-- Add/Edit Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="modal-heading">Add New Manga</div>
-      <button class="btn" onclick="closeModal()" style="padding:.2rem .6rem">✕</button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <!-- AniList Search -->
-      <div style="margin-bottom:1rem">
+      <div style="margin-bottom:1.25rem">
         <label>Cari dari AniList (gambar otomatis)</label>
         <div class="tmdb-wrap">
           <div class="tmdb-row">
             <input class="tmdb-input" id="anilist-search" type="text" placeholder="Ketik judul manga/manhwa..." oninput="onAnilistSearch(this.value)" autocomplete="off">
-            <button class="btn" onclick="clearAnilist()" style="padding:.3rem .6rem">✕</button>
+            <button class="btn" onclick="clearAnilist()" style="padding:.3rem .8rem">✕</button>
           </div>
           <div class="tmdb-dropdown" id="anilist-dd"></div>
         </div>
       </div>
 
-      <div class="add-layout" id="add-layout">
-        <div class="poster-box" id="poster-box">
-          <div class="poster-ph">?</div>
-        </div>
+      <div class="add-layout">
+        <div class="poster-box" id="poster-box"><div class="poster-ph">?</div></div>
         <div style="flex:1">
           <div class="form-grid">
-            <div class="form-group full">
-              <label>Title</label>
-              <input type="text" id="f-title" placeholder="Manga title...">
-            </div>
-            <div class="form-group">
-              <label>Type</label>
-              <select id="f-type">
-                <option value="Manga">📘 Manga (Japanese)</option>
-                <option value="Manhwa">📱 Manhwa (Korean)</option>
-                <option value="Manhua">📙 Manhua (Chinese)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Year</label>
-              <input type="number" id="f-year" placeholder="2024">
-            </div>
-            <div class="form-group">
-              <label>Status</label>
-              <select id="f-status">
-                <option value="plan">📋 Plan to Read</option>
-                <option value="reading">📖 Reading</option>
-                <option value="completed">✅ Completed</option>
-                <option value="dropped">⛔ Dropped</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Author / Artist</label>
-              <input type="text" id="f-author" placeholder="Author name">
-            </div>
-            <div class="form-group">
-              <label>Genres</label>
-              <input type="text" id="f-genre" placeholder="Action, Fantasy, Romance...">
-            </div>
-            <div class="form-group">
-              <label>Total Chapters</label>
-              <input type="number" id="f-chapters" placeholder="Total chapters" min="0">
-            </div>
-            <div class="form-group">
-              <label>Current Chapter</label>
-              <input type="number" id="f-current-chapter" placeholder="Current chapter" min="0">
-            </div>
-            <div class="form-group">
-              <label>Volumes</label>
-              <input type="text" id="f-volumes" placeholder="Optional">
-            </div>
-            <div class="form-group">
-              <label>Rating</label>
-              <div class="star-rating" id="star-rating">
-                <button class="star-btn" data-v="1" onclick="setRating(1)">★</button>
-                <button class="star-btn" data-v="2" onclick="setRating(2)">★</button>
-                <button class="star-btn" data-v="3" onclick="setRating(3)">★</button>
-                <button class="star-btn" data-v="4" onclick="setRating(4)">★</button>
-                <button class="star-btn" data-v="5" onclick="setRating(5)">★</button>
-              </div>
-            </div>
-            <div class="form-group full">
-              <label>Notes</label>
-              <textarea id="f-notes" rows="2" placeholder="Personal thoughts..."></textarea>
-            </div>
+            <div class="form-group full"><label>Title</label><input type="text" id="f-title"></div>
+            <div class="form-group"><label>Type</label><select id="f-type"><option>Manga</option><option>Manhwa</option><option>Manhua</option></select></div>
+            <div class="form-group"><label>Year</label><input type="number" id="f-year"></div>
+            <div class="form-group"><label>Status</label><select id="f-status"><option value="plan">Plan to Read</option><option value="reading">Reading</option><option value="completed">Completed</option><option value="dropped">Dropped</option></select></div>
+            <div class="form-group"><label>Author</label><input type="text" id="f-author"></div>
+            <div class="form-group"><label>Genres</label><input type="text" id="f-genre"></div>
+            <div class="form-group"><label>Total Chapters</label><input type="number" id="f-chapters"></div>
+            <div class="form-group"><label>Current Chapter</label><input type="number" id="f-current-chapter"></div>
+            <div class="form-group"><label>Volumes</label><input type="text" id="f-volumes"></div>
+            <div class="form-group"><label>Rating</label><div class="star-rating" id="star-rating"><button class="star-btn" data-v="1" onclick="setRating(1)">★</button><button class="star-btn" data-v="2" onclick="setRating(2)">★</button><button class="star-btn" data-v="3" onclick="setRating(3)">★</button><button class="star-btn" data-v="4" onclick="setRating(4)">★</button><button class="star-btn" data-v="5" onclick="setRating(5)">★</button></div></div>
+            <div class="form-group full"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
           </div>
         </div>
       </div>
-      
-      <input type="hidden" id="f-cover" value="">
-      <input type="hidden" id="f-anilist-id" value="">
+      <input type="hidden" id="f-cover">
+      <input type="hidden" id="f-anilist-id">
+      <div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="btn-save" onclick="saveEntry()">Save Manga</button></div>
+    </div>
+  </div>
+</div>
 
-      <div class="modal-footer">
-        <button class="btn" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" id="btn-save" onclick="saveEntry()">Save Manga</button>
+<!-- Detail Modal dengan Update Chapter -->
+<div class="modal-overlay" id="detail-overlay" onclick="closeDetailOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;gap:1rem;align-items:flex-start;width:100%">
+        <div id="d-poster"></div>
+        <div style="flex:1">
+          <div class="modal-title" id="d-title"></div>
+          <div style="font-size:.8rem;color:var(--text-dim);margin-top:.35rem" id="d-meta"></div>
+        </div>
+        <button class="modal-close" onclick="closeDetail()">✕</button>
       </div>
     </div>
+    <div class="modal-body" id="detail-body"></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== GOOGLE SHEETS API ====================
-// ⚠️ GANTI URL INI DENGAN URL APPS SCRIPT ANDA ⚠️
 const API_SHEETS = 'https://script.google.com/macros/s/AKfycbw7BjczrAVkCTdumUlXPZbWZLGpbs71O_FjqEkH5K_vCwaQKC1WAuoZ6GHdAG_dUD7M/exec';
-
-// ==================== ANILIST API ====================
 const ANILIST_API = 'https://graphql.anilist.co';
 
-// ==================== DATA ====================
 let mediaData = [];
 let currentRating = 0;
 let editingId = null;
 let filterSt = 'all';
 let filterTy = 'all';
-let viewMode = 'grid';
 let anilistTimer = null;
 
-// ==================== SYNC FUNCTIONS ====================
-function setSyncStatus(status, message) {
+function setSyncStatus(status, msg) {
   const dot = document.getElementById('sync-dot');
   const text = document.getElementById('sync-status');
   if (dot) dot.className = 'sync-dot ' + status;
-  if (text) text.textContent = message;
+  if (text) text.textContent = msg;
 }
 
 function showToast(msg, isError) {
@@ -297,145 +248,55 @@ function showToast(msg, isError) {
 }
 
 async function apiSheets(body) {
-  const response = await fetch(API_SHEETS, {
-    method: 'POST',
-    body: JSON.stringify(body)
-  });
-  const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error('Server error: ' + text.substring(0, 100));
-  }
+  const res = await fetch(API_SHEETS, { method: 'POST', body: JSON.stringify(body) });
+  const text = await res.text();
+  try { return JSON.parse(text); } catch(e) { throw new Error('Server error'); }
 }
 
 async function loadFromSheets() {
   setSyncStatus('syncing', 'Loading...');
   try {
-    const response = await fetch(API_SHEETS + '?action=getAll');
-    const data = await response.json();
+    const res = await fetch(API_SHEETS + '?action=getAll');
+    const data = await res.json();
     if (data.error) throw new Error(data.error);
-    
     mediaData = (data.manga || []).map(m => ({
-      id: Number(m.id || 0),
-      title: String(m.title || ''),
-      type: String(m.type || 'Manga'),
-      year: Number(m.year || 0),
-      status: String(m.status || 'plan'),
-      genre: String(m.genre || ''),
-      author: String(m.author || ''),
-      chapters: Number(m.chapters || 0),
-      currentChapter: Number(m.currentChapter || 0),
-      volumes: String(m.volumes || ''),
-      rating: Number(m.rating || 0),
-      notes: String(m.notes || ''),
-      added: Number(m.added || 0),
-      cover: String(m.cover || ''),
-      anilistId: String(m.anilistId || m.tmdbid || '')
+      id: Number(m.id), title: m.title, type: m.type || 'Manga', year: Number(m.year), status: m.status || 'plan',
+      genre: m.genre || '', author: m.author || '', chapters: Number(m.chapters) || 0, currentChapter: Number(m.currentChapter) || 0,
+      volumes: m.volumes || '', rating: Number(m.rating) || 0, notes: m.notes || '', added: Number(m.added) || Date.now(),
+      cover: m.cover || '', anilistId: m.anilistId || ''
     }));
-    
     setSyncStatus('online', 'Synced');
     renderMedia();
-  } catch (err) {
-    setSyncStatus('error', 'Error: ' + err.message);
-    // Fallback ke localStorage jika Sheets error
-    loadFromStorage();
-  }
+  } catch(err) { setSyncStatus('error', 'Error'); }
 }
 
-// Fallback ke localStorage
-function loadFromStorage() {
-  const saved = localStorage.getItem('mangaTracker');
-  if (saved) {
-    mediaData = JSON.parse(saved);
-    renderMedia();
-  }
-}
-
-function saveToStorage() {
-  localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
-}
-
-// ==================== ANILIST SEARCH ====================
-async function searchAnilist(query) {
-  const searchQuery = `
-    query ($search: String) {
-      Media (search: $search, type: MANGA) {
-        id
-        title { romaji english native }
-        coverImage { large }
-        startDate { year }
-        chapters
-        volumes
-        genres
-        staff {
-          edges {
-            node { name { full } primaryOccupations }
-          }
-        }
-      }
-    }
-  `;
-  
+async function searchAnilist(q) {
+  const query = `query($search:String){Media(search:$search,type:MANGA){id title{romaji}coverImage{large}startDate{year}chapters volumes genres staff{edges{node{name{full}primaryOccupations}}}}}`;
   try {
-    const response = await fetch(ANILIST_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: searchQuery, variables: { search: query } })
-    });
-    const data = await response.json();
+    const res = await fetch(ANILIST_API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({query, variables:{search:q}}) });
+    const data = await res.json();
     return data.data?.Media || null;
-  } catch (err) {
-    console.error('AniList error:', err);
-    return null;
-  }
+  } catch(e) { return null; }
 }
 
-function onAnilistSearch(value) {
+function onAnilistSearch(val) {
   clearTimeout(anilistTimer);
-  if (value.length < 2) {
-    document.getElementById('anilist-dd').style.display = 'none';
-    return;
-  }
+  if (val.length < 2) { document.getElementById('anilist-dd').style.display = 'none'; return; }
   anilistTimer = setTimeout(async () => {
-    const manga = await searchAnilist(value);
+    const manga = await searchAnilist(val);
     const dd = document.getElementById('anilist-dd');
-    
-    if (!manga) {
-      dd.style.display = 'none';
-      return;
-    }
-    
+    if (!manga) { dd.style.display = 'none'; return; }
     let author = '';
     if (manga.staff?.edges) {
-      const authorEdge = manga.staff.edges.find(edge => 
-        edge.node.primaryOccupations?.some(occ => occ.includes('Author') || occ.includes('Writer'))
-      );
-      if (authorEdge) author = authorEdge.node.name.full;
+      const a = manga.staff.edges.find(e => e.node.primaryOccupations?.some(o => o.includes('Author')));
+      if (a) author = a.node.name.full;
     }
-    
-    dd.innerHTML = `
-      <div class="tmdb-item" onclick="selectAnilistManga(this)" 
-           data-id="${manga.id}"
-           data-title="${manga.title.romaji || manga.title.english || manga.title.native}"
-           data-cover="${manga.coverImage?.large || ''}"
-           data-year="${manga.startDate?.year || ''}"
-           data-chapters="${manga.chapters || ''}"
-           data-volumes="${manga.volumes || ''}"
-           data-genres="${(manga.genres || []).slice(0,3).join(', ')}"
-           data-author="${author}">
-        ${manga.coverImage?.large ? `<img class="tmdb-thumb" src="${manga.coverImage.large}">` : `<div class="tmdb-nothumb">${(manga.title.romaji || '?').charAt(0)}</div>`}
-        <div>
-          <div class="tmdb-name">${manga.title.romaji || manga.title.english}</div>
-          <div class="tmdb-sub">${manga.genres?.slice(0,2).join(', ') || ''} · ${manga.chapters || '?'} ch</div>
-        </div>
-      </div>
-    `;
+    dd.innerHTML = `<div class="tmdb-item" onclick="selectManga(this)" data-id="${manga.id}" data-title="${manga.title.romaji}" data-cover="${manga.coverImage?.large||''}" data-year="${manga.startDate?.year||''}" data-chapters="${manga.chapters||''}" data-volumes="${manga.volumes||''}" data-genres="${(manga.genres||[]).slice(0,3).join(', ')}" data-author="${author}">${manga.coverImage?.large?`<img class="tmdb-thumb" src="${manga.coverImage.large}">`:`<div class="tmdb-nothumb">${(manga.title.romaji||'?').charAt(0)}</div>`}<div><div class="tmdb-name">${manga.title.romaji}</div><div class="tmdb-sub">${manga.genres?.slice(0,2).join(', ')||''} · ${manga.chapters||'?'} ch</div></div></div>`;
     dd.style.display = 'block';
   }, 400);
 }
 
-function selectAnilistManga(el) {
+function selectManga(el) {
   document.getElementById('f-title').value = el.dataset.title;
   document.getElementById('f-year').value = el.dataset.year;
   document.getElementById('f-chapters').value = el.dataset.chapters;
@@ -445,7 +306,6 @@ function selectAnilistManga(el) {
   document.getElementById('f-cover').value = el.dataset.cover;
   document.getElementById('f-anilist-id').value = el.dataset.id;
   document.getElementById('anilist-search').value = el.dataset.title;
-  
   updateCoverPreview(el.dataset.cover, el.dataset.title);
   document.getElementById('anilist-dd').style.display = 'none';
 }
@@ -453,232 +313,202 @@ function selectAnilistManga(el) {
 function updateCoverPreview(url, title) {
   const box = document.getElementById('poster-box');
   const letter = (title || '?').charAt(0).toUpperCase();
-  if (url && url !== 'null' && url !== '') {
-    box.innerHTML = `<img class="poster-ph" src="${url}" style="width:70px;height:105px;object-fit:cover" onerror="this.outerHTML='<div class=poster-ph>${letter}</div>';">`;
-  } else {
-    box.innerHTML = `<div class="poster-ph">${letter}</div>`;
-  }
+  if (url) box.innerHTML = `<img class="poster-ph" src="${url}" style="width:90px;height:135px;object-fit:cover" onerror="this.outerHTML='<div class=poster-ph>${letter}</div>';">`;
+  else box.innerHTML = `<div class="poster-ph">${letter}</div>`;
 }
 
 function clearAnilist() {
   document.getElementById('anilist-search').value = '';
   document.getElementById('f-cover').value = '';
-  document.getElementById('f-anilist-id').value = '';
   document.getElementById('anilist-dd').style.display = 'none';
-  updateCoverPreview('', document.getElementById('f-title').value);
 }
 
-// ==================== CORE FUNCTIONS ====================
 async function saveEntry() {
   const title = document.getElementById('f-title').value.trim();
-  if (!title) {
-    showToast('Please enter a title', true);
-    return;
-  }
-  
+  if (!title) { showToast('Enter title', true); return; }
   const entry = {
-    id: editingId || Date.now(),
-    title: title,
-    type: document.getElementById('f-type').value,
+    id: editingId || Date.now(), title, type: document.getElementById('f-type').value,
     year: parseInt(document.getElementById('f-year').value) || new Date().getFullYear(),
-    status: document.getElementById('f-status').value,
-    genre: document.getElementById('f-genre').value || '',
-    author: document.getElementById('f-author').value || '',
-    chapters: parseInt(document.getElementById('f-chapters').value) || 0,
+    status: document.getElementById('f-status').value, genre: document.getElementById('f-genre').value || '',
+    author: document.getElementById('f-author').value || '', chapters: parseInt(document.getElementById('f-chapters').value) || 0,
     currentChapter: parseInt(document.getElementById('f-current-chapter').value) || 0,
-    volumes: document.getElementById('f-volumes').value || '',
-    rating: currentRating,
-    notes: document.getElementById('f-notes').value || '',
-    cover: document.getElementById('f-cover').value || '',
-    anilistId: document.getElementById('f-anilist-id').value || '',
-    added: editingId ? (mediaData.find(x => x.id === editingId)?.added || Date.now()) : Date.now()
+    volumes: document.getElementById('f-volumes').value || '', rating: currentRating,
+    notes: document.getElementById('f-notes').value || '', cover: document.getElementById('f-cover').value || '',
+    anilistId: document.getElementById('f-anilist-id').value || '', added: editingId ? (mediaData.find(x=>x.id===editingId)?.added||Date.now()) : Date.now()
   };
-  
   setSyncStatus('syncing', 'Saving...');
-  
   try {
     await apiSheets({ action: 'save', manga: entry });
-    
-    if (editingId) {
-      const idx = mediaData.findIndex(x => x.id === editingId);
-      if (idx > -1) mediaData[idx] = entry;
-    } else {
-      mediaData.push(entry);
-    }
-    
-    saveToStorage();
-    renderMedia();
-    closeModal();
-    setSyncStatus('online', 'Saved!');
-    showToast(editingId ? 'Updated!' : 'Saved!');
-  } catch (err) {
-    setSyncStatus('error', 'Save failed');
-    showToast('Error: ' + err.message, true);
-    // Fallback ke localStorage
-    if (editingId) {
-      const idx = mediaData.findIndex(x => x.id === editingId);
-      if (idx > -1) mediaData[idx] = entry;
-    } else {
-      mediaData.push(entry);
-    }
-    saveToStorage();
-    renderMedia();
-    closeModal();
-  }
+    if (editingId) { const i = mediaData.findIndex(x=>x.id===editingId); if(i>-1) mediaData[i]=entry; }
+    else mediaData.push(entry);
+    renderMedia(); closeModal(); setSyncStatus('online', 'Saved!'); showToast('Saved!');
+  } catch(err) { showToast('Save failed', true); setSyncStatus('error', 'Failed'); }
 }
 
 function getFiltered() {
   let data = [...mediaData];
   if (filterSt !== 'all') data = data.filter(x => x.status === filterSt);
   if (filterTy !== 'all') data = data.filter(x => x.type === filterTy);
-  
   const q = document.getElementById('search-input').value.toLowerCase();
-  if (q) {
-    data = data.filter(x => 
-      x.title.toLowerCase().includes(q) || 
-      (x.author && x.author.toLowerCase().includes(q)) ||
-      (x.genre && x.genre.toLowerCase().includes(q))
-    );
-  }
-  
+  if (q) data = data.filter(x => x.title.toLowerCase().includes(q) || (x.author && x.author.toLowerCase().includes(q)));
   const sort = document.getElementById('sort-select').value;
-  if (sort === 'rating') data.sort((a, b) => b.rating - a.rating);
-  else if (sort === 'title') data.sort((a, b) => a.title.localeCompare(b.title));
-  else data.sort((a, b) => b.added - a.added);
-  
+  if (sort === 'rating') data.sort((a,b) => b.rating - a.rating);
+  else if (sort === 'title') data.sort((a,b) => a.title.localeCompare(b.title));
+  else data.sort((a,b) => b.added - a.added);
   return data;
+}
+
+function renderStars(r) { return [1,2,3,4,5].map(i => `<span class="star${i<=r?' filled':''}">★</span>`).join(''); }
+
+function cardHTML(m) {
+  const letter = m.title.charAt(0).toUpperCase();
+  const progress = m.chapters ? Math.round((m.currentChapter / m.chapters) * 100) : 0;
+  const typeIcon = { Manga:'📘', Manhwa:'📱', Manhua:'📙' }[m.type] || '📘';
+  const statusIcon = { reading:'📖', completed:'✅', plan:'📋', dropped:'⛔' }[m.status] || '📚';
+  return `<div class="media-card" onclick="showDetail(${m.id})">${m.cover?`<img class="card-poster" src="${m.cover}" onerror="this.style.display='none';">`:''}<div class="poster-placeholder" style="${m.cover?'display:none':'display:flex'}">${letter}</div><div class="card-badge">${statusIcon}</div><div class="card-info"><div class="card-title">${m.title}</div><div class="card-meta">${typeIcon} ${m.type} · ${m.year||'?'}</div><div class="card-meta">📖 ${m.currentChapter}/${m.chapters||'?'}</div>${m.rating?`<div class="star-row">${renderStars(m.rating)}</div>`:''}${progress>0&&progress<100?`<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>`:''}</div></div>`;
 }
 
 function renderMedia() {
   updateStats();
   const data = getFiltered();
   const container = document.getElementById('media-container');
-  
-  if (!data.length) {
-    container.innerHTML = '<div class="empty">📭 No manga found<br><small>Add your first manga using the + button</small></div>';
-    return;
-  }
-  
-  container.innerHTML = `<div class="media-grid">${data.map(m => cardHTML(m)).join('')}</div>`;
-}
-
-function cardHTML(m) {
-  const letter = m.title.charAt(0).toUpperCase();
-  const progress = m.chapters ? Math.round((m.currentChapter / m.chapters) * 100) : 0;
-  const typeIcons = { Manga: '📘', Manhwa: '📱', Manhua: '📙' };
-  const statusIcons = { reading: '📖', completed: '✅', plan: '📋', dropped: '⛔' };
-  
-  return `
-    <div class="media-card" onclick="showDetail(${m.id})">
-      ${m.cover ? `<img class="card-poster" src="${m.cover}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` : ''}
-      <div class="poster-placeholder" style="${m.cover ? 'display:none' : 'display:flex'}">${letter}</div>
-      <div class="card-badge">${statusIcons[m.status] || '📚'}</div>
-      <div class="card-info">
-        <div class="card-title">${m.title}</div>
-        <div class="card-meta">${typeIcons[m.type] || '📘'} ${m.type} · ${m.year || '?'}</div>
-        <div class="card-meta">📖 ${m.currentChapter || 0}/${m.chapters || '?'}</div>
-        ${m.rating ? `<div class="star-row">${renderStars(m.rating)}</div>` : ''}
-        ${progress > 0 && progress < 100 ? `<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
-      </div>
-    </div>
-  `;
-}
-
-function renderStars(rating) {
-  return [1,2,3,4,5].map(i => `<span class="star${i <= rating ? ' filled' : ''}">★</span>`).join('');
+  if (!data.length) { container.innerHTML = '<div class="empty">📭 No manga found<br><small>Add your first manga using the + button</small></div>'; return; }
+  container.innerHTML = `<div class="media-grid">${data.map(cardHTML).join('')}</div>`;
 }
 
 function updateStats() {
   document.getElementById('stat-total').textContent = mediaData.length;
-  document.getElementById('stat-reading').textContent = mediaData.filter(x => x.status === 'reading').length;
-  document.getElementById('stat-completed').textContent = mediaData.filter(x => x.status === 'completed').length;
-  document.getElementById('stat-plan').textContent = mediaData.filter(x => x.status === 'plan').length;
+  document.getElementById('stat-reading').textContent = mediaData.filter(x=>x.status==='reading').length;
+  document.getElementById('stat-completed').textContent = mediaData.filter(x=>x.status==='completed').length;
+  document.getElementById('stat-plan').textContent = mediaData.filter(x=>x.status==='plan').length;
+  document.getElementById('cnt-all').textContent = mediaData.length;
+  document.getElementById('cnt-reading').textContent = mediaData.filter(x=>x.status==='reading').length;
+  document.getElementById('cnt-completed').textContent = mediaData.filter(x=>x.status==='completed').length;
+  document.getElementById('cnt-plan').textContent = mediaData.filter(x=>x.status==='plan').length;
+  document.getElementById('cnt-dropped').textContent = mediaData.filter(x=>x.status==='dropped').length;
 }
 
-function filterStatus(status) {
-  filterSt = status;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  if (status === 'all') document.getElementById('nav-all')?.classList.add('active');
-  else document.getElementById('nav-' + status)?.classList.add('active');
-  renderMedia();
-}
-
-function filterType(type) {
-  filterTy = type;
-  document.querySelectorAll('[id^="nav-type-"]').forEach(el => el.classList.remove('active'));
-  if (type === 'all') document.getElementById('nav-type-all')?.classList.add('active');
-  else document.getElementById('nav-type-' + type.toLowerCase())?.classList.add('active');
-  renderMedia();
-}
-
+function filterStatus(s) { filterSt = s; renderMedia(); }
+function filterType(t) { filterTy = t; renderMedia(); }
 function openModal(id) {
   editingId = id || null;
-  const m = id ? mediaData.find(x => x.id === id) : null;
-  
+  const m = id ? mediaData.find(x=>x.id===id) : null;
   document.getElementById('modal-heading').textContent = m ? 'Edit Manga' : 'Add New Manga';
-  document.getElementById('f-title').value = m ? m.title : '';
-  document.getElementById('f-type').value = m ? m.type : 'Manga';
-  document.getElementById('f-year').value = m ? m.year : '';
-  document.getElementById('f-status').value = m ? m.status : 'plan';
-  document.getElementById('f-genre').value = m ? m.genre : '';
-  document.getElementById('f-author').value = m ? m.author : '';
-  document.getElementById('f-chapters').value = m ? m.chapters : '';
-  document.getElementById('f-current-chapter').value = m ? m.currentChapter : '';
-  document.getElementById('f-volumes').value = m ? m.volumes : '';
-  document.getElementById('f-notes').value = m ? m.notes : '';
-  document.getElementById('f-cover').value = m ? m.cover : '';
-  document.getElementById('f-anilist-id').value = m ? m.anilistId : '';
-  
-  setRating(m ? m.rating : 0);
-  updateCoverPreview(m ? m.cover : '', m ? m.title : '');
+  document.getElementById('f-title').value = m?.title || '';
+  document.getElementById('f-type').value = m?.type || 'Manga';
+  document.getElementById('f-year').value = m?.year || '';
+  document.getElementById('f-status').value = m?.status || 'plan';
+  document.getElementById('f-genre').value = m?.genre || '';
+  document.getElementById('f-author').value = m?.author || '';
+  document.getElementById('f-chapters').value = m?.chapters || '';
+  document.getElementById('f-current-chapter').value = m?.currentChapter || '';
+  document.getElementById('f-volumes').value = m?.volumes || '';
+  document.getElementById('f-notes').value = m?.notes || '';
+  document.getElementById('f-cover').value = m?.cover || '';
+  document.getElementById('f-anilist-id').value = m?.anilistId || '';
+  setRating(m?.rating || 0);
+  updateCoverPreview(m?.cover, m?.title);
   document.getElementById('modal-overlay').classList.add('open');
 }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); editingId = null; }
+function closeModalOutside(e) { if(e.target === document.getElementById('modal-overlay')) closeModal(); }
+function setRating(v) { currentRating = v; document.querySelectorAll('.star-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.v) <= v)); }
 
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
-  editingId = null;
-}
-
-function closeModalOutside(e) {
-  if (e.target === document.getElementById('modal-overlay')) closeModal();
-}
-
-function setRating(v) {
-  currentRating = v;
-  document.querySelectorAll('.star-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.v) <= v));
-}
-
+// DETAIL MODAL dengan UPDATE CHAPTER
 function showDetail(id) {
   const m = mediaData.find(x => x.id === id);
   if (!m) return;
-  
+  const letter = m.title.charAt(0).toUpperCase();
+  const typeIcon = { Manga:'📘', Manhwa:'📱', Manhua:'📙' }[m.type] || '📘';
+  const statusIcon = { reading:'📖 Reading', completed:'✅ Completed', plan:'📋 Plan to Read', dropped:'⛔ Dropped' }[m.status] || m.status;
   const progress = m.chapters ? Math.round((m.currentChapter / m.chapters) * 100) : 0;
-  alert(`📖 ${m.title}\n\nType: ${m.type}\nStatus: ${m.status}\nAuthor: ${m.author || '-'}\nProgress: ${m.currentChapter || 0}/${m.chapters || '?'} chapters (${progress}%)\nRating: ${m.rating}/5\n\nNotes: ${m.notes || '-'}`);
+  
+  document.getElementById('d-title').innerHTML = `${typeIcon} ${m.title}`;
+  document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} · ${m.author ? `✍️ ${m.author}` : ''}`;
+  document.getElementById('d-poster').innerHTML = m.cover ? `<img class="detail-poster" src="${m.cover}" onerror="this.outerHTML='<div class=detail-poster-ph>${letter}</div>';">` : `<div class="detail-poster-ph">${letter}</div>`;
+  
+  document.getElementById('detail-body').innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:1rem;margin-bottom:1.5rem">
+      ${m.rating ? `<div class="detail-rating-big">${m.rating}.0</div><div>${renderStars(m.rating)}<div style="font-size:.75rem;color:var(--text-dim);margin-top:.25rem">Your rating</div></div>` : '<div style="color:var(--text-dim)">Not yet rated</div>'}
+    </div>
+    
+    <!-- CHAPTER UPDATE SECTION -->
+    <div style="background:var(--surface2);border-radius:2px;padding:1rem;margin-bottom:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-bottom:.25rem">CURRENT PROGRESS</div>
+          <div style="font-size:1.5rem;font-weight:500;color:var(--gold)">${m.currentChapter || 0} / ${m.chapters || '?'} chapters</div>
+          ${m.chapters ? `<div style="font-size:.75rem;color:var(--text-muted);margin-top:.25rem">${progress}% completed</div>` : ''}
+        </div>
+        <div class="chapter-control">
+          <input type="number" id="quick-chapter-input" class="chapter-input" value="${m.currentChapter || 0}" min="0" max="${m.chapters || 9999}" style="width:100px">
+          <button class="update-chapter-btn" onclick="updateChapterQuick(${m.id})">Update Chapter</button>
+        </div>
+      </div>
+      ${m.chapters && progress > 0 ? `<div class="progress-bar" style="margin-top:.75rem"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
+    </div>
+    
+    <div style="margin-bottom:1rem">
+      <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val" style="color:var(--gold)">${statusIcon}</span></div>
+      ${m.author ? `<div class="detail-row"><span class="detail-key">Author / Artist</span><span class="detail-val">${m.author}</span></div>` : ''}
+      ${m.genre ? `<div class="detail-row"><span class="detail-key">Genres</span><span class="detail-val">${m.genre}</span></div>` : ''}
+      ${m.chapters ? `<div class="detail-row"><span class="detail-key">Total Chapters</span><span class="detail-val">${m.chapters}</span></div>` : ''}
+      ${m.volumes ? `<div class="detail-row"><span class="detail-key">Volumes</span><span class="detail-val">${m.volumes}</span></div>` : ''}
+    </div>
+    
+    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold-dim);padding:.75rem 1rem;font-size:.875rem;color:var(--text-muted);line-height:1.6;margin-bottom:1rem"><em>"${m.notes}"</em></div>` : ''}
+    
+    <div style="display:flex;gap:.75rem;padding-top:.5rem">
+      <button class="btn btn-primary" onclick="closeDetail(); openModal(${m.id})">✏️ Edit Details</button>
+      <button class="btn" onclick="deleteEntry(${m.id})" style="border-color:rgba(224,85,85,.4);color:var(--red)">🗑️ Delete</button>
+    </div>
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
 }
+
+// Quick update chapter function
+async function updateChapterQuick(id) {
+  const input = document.getElementById('quick-chapter-input');
+  const newChapter = parseInt(input.value) || 0;
+  const manga = mediaData.find(x => x.id === id);
+  if (!manga) return;
+  
+  const updatedManga = { ...manga, currentChapter: newChapter };
+  const idx = mediaData.findIndex(x => x.id === id);
+  if (idx !== -1) mediaData[idx] = updatedManga;
+  
+  setSyncStatus('syncing', 'Updating...');
+  try {
+    await apiSheets({ action: 'save', manga: updatedManga });
+    renderMedia();
+    setSyncStatus('online', 'Updated');
+    showToast(`Chapter updated to ${newChapter}`);
+    // Refresh detail view
+    closeDetail();
+    showDetail(id);
+  } catch (err) {
+    showToast('Update failed', true);
+    setSyncStatus('error', 'Failed');
+  }
+}
+
+function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); }
+function closeDetailOutside(e) { if(e.target === document.getElementById('detail-overlay')) closeDetail(); }
 
 async function deleteEntry(id) {
   if (!confirm('Remove this manga?')) return;
   setSyncStatus('syncing', 'Deleting...');
   try {
-    await apiSheets({ action: 'delete', id: id });
+    await apiSheets({ action: 'delete', id });
     mediaData = mediaData.filter(x => x.id !== id);
-    saveToStorage();
     renderMedia();
+    closeDetail();
     setSyncStatus('online', 'Deleted');
     showToast('Removed');
-  } catch (err) {
-    showToast('Delete failed', true);
-  }
+  } catch(err) { showToast('Delete failed', true); }
 }
 
-// Close dropdown on click outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('.tmdb-wrap')) {
-    document.getElementById('anilist-dd').style.display = 'none';
-  }
-});
-
-// Initialize
+document.addEventListener('click', e => { if(!e.target.closest('.tmdb-wrap')) document.getElementById('anilist-dd').style.display = 'none'; });
 loadFromSheets();
 </script>
 </body>
