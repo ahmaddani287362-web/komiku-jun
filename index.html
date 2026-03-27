@@ -262,7 +262,8 @@
 // ==================== GOOGLE SHEETS API ====================
 const API_SHEETS = 'https://script.google.com/macros/s/AKfycbw7BjczrAVkCTdumUlXPZbWZLGpbs71O_FjqEkH5K_vCwaQKC1WAuoZ6GHdAG_dUD7M/exec';
 
-// ==================== MANGADEX API ====================
+// ==================== MANGADEX API dengan CORS PROXY ====================
+const CORS_PROXY = 'https://corsproxy.io/?';
 const MANGADEX_API = 'https://api.mangadex.org';
 
 let mediaData = [];
@@ -274,18 +275,22 @@ let currentFilterGenre = 'all';
 let currentViewMode = 'grid';
 let mangadexTimer = null;
 
-// ==================== MANGADEX SEARCH FUNCTION ====================
+// ==================== MANGADEX SEARCH FUNCTION dengan CORS PROXY ====================
 async function searchMangaDex(query) {
   try {
-    // Search manga by title
+    // Build original MangaDex URL
     const searchUrl = `${MANGADEX_API}/manga?title=${encodeURIComponent(query)}&limit=8&includes[]=cover_art&includes[]=author&includes[]=artist`;
-    const response = await fetch(searchUrl);
+    // Wrap with CORS proxy
+    const proxyUrl = `${CORS_PROXY}${encodeURIComponent(searchUrl)}`;
+    
+    console.log('Fetching:', proxyUrl);
+    const response = await fetch(proxyUrl);
     const data = await response.json();
     
     if (!data.data || data.data.length === 0) return [];
     
     // Process results
-    const results = await Promise.all(data.data.map(async (manga) => {
+    const results = data.data.map(manga => {
       const attributes = manga.attributes;
       
       // Get cover art filename
@@ -314,7 +319,7 @@ async function searchMangaDex(query) {
       const coverUrl = coverFilename ? 
         `https://uploads.mangadex.org/covers/${manga.id}/${coverFilename}.256.jpg` : '';
       
-      // Get genres from tags
+      // Get genres from tags (filter only genre tags)
       const genres = attributes.tags
         .filter(tag => tag.attributes && tag.attributes.group === 'genre')
         .map(tag => tag.attributes.name.en || tag.attributes.name)
@@ -326,28 +331,32 @@ async function searchMangaDex(query) {
                     Object.values(attributes.title || {})[0] || 
                     'Unknown';
       
-      // Get year from publication
-      const year = attributes.year || 
-                   (attributes.publicationDemographic ? 
-                    new Date(attributes.publicationDemographic).getFullYear() : 
-                    null);
+      // Get year
+      const year = attributes.year || '';
+      
+      // Get chapters count (from lastChapter or count chapters)
+      let chapters = attributes.lastChapter || '';
+      if (!chapters && attributes.chapterNumbers) {
+        chapters = attributes.chapterNumbers.length;
+      }
       
       return {
         id: manga.id,
         title: title,
         cover: coverUrl,
-        year: year || '',
-        chapters: attributes.lastChapter || attributes.chapterNumbers?.reduce((a,b) => Math.max(a,b), 0) || attributes.chapterNumbers?.length || '',
+        year: year,
+        chapters: chapters,
         volumes: attributes.lastVolume || '',
         genres: genres.join(', '),
         author: authorName || artistName || '',
         description: attributes.description?.en || attributes.description?.en_us || ''
       };
-    }));
+    });
     
     return results;
   } catch (error) {
     console.error('MangaDex search error:', error);
+    showToast('Search failed: ' + error.message, true);
     return [];
   }
 }
@@ -359,12 +368,16 @@ function onMangaDexSearch(val) {
     return;
   }
   
+  // Show loading indicator
+  const dd = document.getElementById('mangadex-dd');
+  dd.innerHTML = '<div style="padding:.5rem;text-align:center;color:var(--text-dim)">Searching...</div>';
+  dd.style.display = 'block';
+  
   mangadexTimer = setTimeout(async () => {
     const results = await searchMangaDex(val);
-    const dd = document.getElementById('mangadex-dd');
     
     if (!results || results.length === 0) {
-      dd.style.display = 'none';
+      dd.innerHTML = '<div style="padding:.5rem;text-align:center;color:var(--text-dim)">No results found</div>';
       return;
     }
     
@@ -376,12 +389,12 @@ function onMangaDexSearch(val) {
         data-year="${manga.year}"
         data-chapters="${manga.chapters}"
         data-volumes="${manga.volumes}"
-        data-genres="${manga.genres}"
+        data-genres="${escapeHtml(manga.genres)}"
         data-author="${escapeHtml(manga.author)}">
-        <div>${manga.cover ? `<img src="${manga.cover}" style="width:36px;height:54px;object-fit:cover;border-radius:4px">` : `<div style="width:36px;height:54px;background:var(--surface3);display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:1.2rem">${(manga.title.charAt(0) || '?').toUpperCase()}</div>`}</div>
+        <div>${manga.cover ? `<img src="${manga.cover}" style="width:36px;height:54px;object-fit:cover;border-radius:4px" onerror="this.outerHTML='<div style=\'width:36px;height:54px;background:var(--surface3);display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:1rem\'>${(manga.title.charAt(0) || '?').toUpperCase()}</div>'">` : `<div style="width:36px;height:54px;background:var(--surface3);display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:1rem">${(manga.title.charAt(0) || '?').toUpperCase()}</div>`}</div>
         <div>
           <div style="font-size:.8rem;font-weight:500">${escapeHtml(manga.title)}</div>
-          <div style="font-size:.65rem;color:var(--text-dim)">${manga.genres ? manga.genres.substring(0, 30) : ''} · ${manga.chapters || '?'} ch</div>
+          <div style="font-size:.65rem;color:var(--text-dim)">${manga.genres ? manga.genres.substring(0, 35) : ''} · ${manga.chapters || '?'} ch</div>
           ${manga.author ? `<div style="font-size:.6rem;color:var(--gold-dim)">✍️ ${escapeHtml(manga.author.substring(0, 25))}</div>` : ''}
         </div>
       </div>
@@ -405,7 +418,7 @@ function selectMangaDex(el) {
   // Update poster preview
   const posterBox = document.getElementById('poster-box');
   if (el.dataset.cover && el.dataset.cover !== 'null' && el.dataset.cover !== '') {
-    posterBox.innerHTML = `<img src="${el.dataset.cover}" style="width:70px;height:105px;object-fit:cover;border-radius:8px">`;
+    posterBox.innerHTML = `<img src="${el.dataset.cover}" style="width:70px;height:105px;object-fit:cover;border-radius:8px" onerror="this.outerHTML='<div style=\'width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:2rem\'>${(el.dataset.title.charAt(0) || '?').toUpperCase()}</div>'">`;
   } else {
     posterBox.innerHTML = `<div style="width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:2rem">${(el.dataset.title.charAt(0) || '?').toUpperCase()}</div>`;
   }
@@ -688,7 +701,7 @@ function openEditModal(id){
   
   const posterBox = document.getElementById('poster-box');
   if(m.cover && m.cover !== 'null' && m.cover !== '') {
-    posterBox.innerHTML = `<img src="${m.cover}" style="width:70px;height:105px;object-fit:cover;border-radius:8px">`;
+    posterBox.innerHTML = `<img src="${m.cover}" style="width:70px;height:105px;object-fit:cover;border-radius:8px" onerror="this.outerHTML='<div style=\'width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:2rem\'>${(m.title?.charAt(0) || '?').toUpperCase()}</div>'">`;
   } else {
     posterBox.innerHTML = `<div style="width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:2rem">${(m.title?.charAt(0) || '?').toUpperCase()}</div>`;
   }
