@@ -278,15 +278,17 @@ let currentFilterGenre = 'all';
 let currentViewMode = 'grid';
 let jikanTimer = null;
 
-// ==================== ESCAPE HTML ====================
+// ==================== ESCAPE HTML (DIPERKUAT) ====================
 function escapeHtml(str) {
-  if (!str) return '';
+  if (str === null || str === undefined) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/'/g, '&#39;')
+    .replace(/`/g, '&#96;')
+    .replace(/\//g, '&#47;');
 }
 
 // ==================== FUNGSI SYNC KE GOOGLE SHEETS ====================
@@ -901,8 +903,17 @@ function showDetail(id){
   const typeIcon = {Manga:'📘',Manhwa:'📱',Manhua:'📙'}[m.type] || '📘';
   const statusIcon = {reading:'📖 Reading',completed:'✅ Completed',plan:'📋 Plan to Read',dropped:'⛔ Dropped'}[m.status] || m.status;
   const progress = m.chapters ? Math.round((m.currentChapter / m.chapters) * 100) : 0;
-  document.getElementById('d-title').innerHTML = `${typeIcon} ${escapeHtml(m.title)}`;
-  document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} ${m.author ? `· ✍️ ${escapeHtml(m.author)}` : ''}`;
+  
+  // SEMUA data di-escape untuk keamanan
+  const safeTitle = escapeHtml(m.title);
+  const safeAuthor = escapeHtml(m.author);
+  const safeGenre = escapeHtml(m.genre);
+  const safeNotes = escapeHtml(m.notes);
+  const safeUrl = escapeHtml(m.url);
+  const safeStatus = escapeHtml(statusIcon);
+  
+  document.getElementById('d-title').innerHTML = `${typeIcon} ${safeTitle}`;
+  document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} ${m.author ? `· ✍️ ${safeAuthor}` : ''}`;
   document.getElementById('d-poster').innerHTML = m.cover ? `<img class="detail-poster" src="${m.cover}" onerror="this.outerHTML='<div class=detail-poster style=\"width:80px;height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px\">${letter}</div>';">` : `<div class="detail-poster" style="width:80px;height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px">${letter}</div>`;
   
   document.getElementById('detail-body').innerHTML = `
@@ -914,13 +925,13 @@ function showDetail(id){
       </div>${progress > 0 ? `<div class="progress-bar" style="margin-top:.6rem"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
     </div>
     <div>
-      <div class="detail-row"><span>Status</span><span style="color:var(--gold)">${escapeHtml(statusIcon)}</span></div>
-      ${m.author ? `<div class="detail-row"><span>Author</span><span>${escapeHtml(m.author)}</span></div>` : ''}
-      ${m.genre ? `<div class="detail-row"><span>Genres</span><span>${escapeHtml(m.genre)}</span></div>` : ''}
+      <div class="detail-row"><span>Status</span><span style="color:var(--gold)">${safeStatus}</span></div>
+      ${m.author ? `<div class="detail-row"><span>Author</span><span>${safeAuthor}</span></div>` : ''}
+      ${m.genre ? `<div class="detail-row"><span>Genres</span><span>${safeGenre}</span></div>` : ''}
       ${m.chapters ? `<div class="detail-row"><span>Total Ch</span><span>${m.chapters}</span></div>` : ''}
-      ${m.url ? `<div class="detail-row"><span>Link Baca</span><span><a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
+      ${m.url ? `<div class="detail-row"><span>Link Baca</span><span><a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
     </div>
-    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold);padding:.6rem;margin:1rem 0;font-size:.75rem">"${escapeHtml(m.notes)}"</div>` : ''}
+    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold);padding:.6rem;margin:1rem 0;font-size:.75rem">"${safeNotes}"</div>` : ''}
     <div style="display:flex;gap:.5rem;margin-top:.5rem"><button class="btn btn-primary" onclick="closeDetail(); openEditModal(${m.id})">✏️ Edit</button><button class="btn" onclick="deleteEntry(${m.id})" style="border-color:var(--red);color:var(--red)">🗑️ Delete</button></div>
   `;
   document.getElementById('detail-overlay').classList.add('open');
