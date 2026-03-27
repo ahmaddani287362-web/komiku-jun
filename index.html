@@ -100,6 +100,8 @@
   .star-btn{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text-dim)}
   .star-btn.active{color:var(--gold)}
   .modal-footer{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;padding-top:.8rem;border-top:1px solid var(--border-soft)}
+  .tmdb-wrap{position:relative}
+  .tmdb-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.5rem;border-radius:6px;font-size:.8rem}
   .tmdb-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border);max-height:200px;overflow-y:auto;display:none;z-index:50;border-radius:6px}
   .tmdb-item{display:flex;gap:.6rem;padding:.5rem;cursor:pointer;border-bottom:1px solid var(--border-soft)}
   .tmdb-item:hover{background:var(--surface3)}
@@ -108,6 +110,7 @@
   .detail-row{display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--border-soft)}
   .chapter-control{display:flex;gap:.5rem;align-items:center;margin-top:.5rem}
   .chapter-input{width:80px;background:var(--surface2);border:1px solid var(--border);color:var(--gold);padding:.4rem;border-radius:6px;text-align:center}
+  .update-chapter-btn{padding:.4rem .8rem;background:var(--gold);color:#0A0A0C;border:none;border-radius:6px;cursor:pointer;font-size:.7rem}
   .toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--gold);padding:.5rem 1rem;border-radius:20px;font-size:.75rem;z-index:500;opacity:0;transition:.2s}
   .toast.show{opacity:1}
   .empty{text-align:center;padding:2rem;color:var(--text-dim)}
@@ -116,7 +119,6 @@
   .fab{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.2s}
   .fab-add{background:var(--gold);color:#0A0A0C;font-size:1.6rem;border:none}
   .fab-filter{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);font-size:1.2rem}
-  .fab-filter.active{border-color:var(--gold);color:var(--gold)}
   .fab:active{transform:scale(.95)}
   @media(min-width:901px){.fab-container{display:none}}
   @media(max-width:900px){main{grid-template-columns:1fr}aside{display:none}.stats-bar .stat-value{font-size:1.3rem}.stat-item{padding:.6rem .8rem}.tagline{display:none}}
@@ -134,9 +136,9 @@
     <div class="logo">Manga<span>Track</span></div>
     <div class="tagline">track your manga & manhwa journey</div>
   </div>
-  <div class="header-actions">
+  <div>
     <button class="btn" onclick="loadFromSheets()">↻ Sync</button>
-    <button class="btn btn-primary" onclick="openModal()">+ Add</button>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Add</button>
   </div>
 </header>
 
@@ -193,9 +195,10 @@
   </div>
 </main>
 
+<!-- Floating Action Buttons for Mobile -->
 <div class="fab-container">
   <button class="fab fab-filter" id="fab-filter" onclick="toggleSidebar()">⊟</button>
-  <button class="fab fab-add" onclick="openModal()">+</button>
+  <button class="fab fab-add" onclick="openAddModal()">+</button>
 </div>
 
 <!-- Modal Add/Edit -->
@@ -203,21 +206,31 @@
   <div class="modal">
     <div class="modal-header"><div class="modal-title" id="modal-heading">Add Manga</div><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <div style="margin-bottom:.8rem"><label>Cari dari AniList</label><div class="tmdb-wrap"><input class="tmdb-input" id="anilist-search" type="text" placeholder="Ketik judul..." oninput="onAnilistSearch(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);padding:.5rem;border-radius:6px"><div class="tmdb-dropdown" id="anilist-dd"></div></div></div>
-      <div class="form-grid">
-        <div class="form-group full"><label>Title</label><input type="text" id="f-title"></div>
-        <div class="form-group"><label>Type</label><select id="f-type"><option>Manga</option><option>Manhwa</option><option>Manhua</option></select></div>
-        <div class="form-group"><label>Year</label><input type="number" id="f-year"></div>
-        <div class="form-group"><label>Status</label><select id="f-status"><option value="plan">Plan to Read</option><option value="reading">Reading</option><option value="completed">Completed</option><option value="dropped">Dropped</option></select></div>
-        <div class="form-group"><label>Author</label><input type="text" id="f-author"></div>
-        <div class="form-group"><label>Genres</label><input type="text" id="f-genre" placeholder="Action, Fantasy..."></div>
-        <div class="form-group"><label>Total Ch</label><input type="number" id="f-chapters"></div>
-        <div class="form-group"><label>Current Ch</label><input type="number" id="f-current-chapter"></div>
-        <div class="form-group full"><label>Rating</label><div class="star-rating" id="star-rating"><button class="star-btn" data-v="1" onclick="setRating(1)">★</button><button class="star-btn" data-v="2" onclick="setRating(2)">★</button><button class="star-btn" data-v="3" onclick="setRating(3)">★</button><button class="star-btn" data-v="4" onclick="setRating(4)">★</button><button class="star-btn" data-v="5" onclick="setRating(5)">★</button></div></div>
-        <div class="form-group full"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+      <div style="margin-bottom:.8rem">
+        <label>Cari dari AniList</label>
+        <div class="tmdb-wrap">
+          <input class="tmdb-input" id="anilist-search" type="text" placeholder="Ketik judul..." oninput="onAnilistSearch(this.value)" autocomplete="off">
+          <div class="tmdb-dropdown" id="anilist-dd"></div>
+        </div>
       </div>
-      <input type="hidden" id="f-cover"><input type="hidden" id="f-anilist-id">
-      <div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEntry()">Save</button></div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Title *</label><input type="text" id="f-title" placeholder="Manga title"></div>
+        <div class="form-group"><label>Type</label><select id="f-type"><option>Manga</option><option>Manhwa</option><option>Manhua</option></select></div>
+        <div class="form-group"><label>Year</label><input type="number" id="f-year" placeholder="2024"></div>
+        <div class="form-group"><label>Status</label><select id="f-status"><option value="plan">📋 Plan to Read</option><option value="reading">📖 Reading</option><option value="completed">✅ Completed</option><option value="dropped">⛔ Dropped</option></select></div>
+        <div class="form-group"><label>Author</label><input type="text" id="f-author" placeholder="Author name"></div>
+        <div class="form-group"><label>Genres</label><input type="text" id="f-genre" placeholder="Action, Fantasy..."></div>
+        <div class="form-group"><label>Total Chapters</label><input type="number" id="f-chapters" placeholder="0"></div>
+        <div class="form-group"><label>Current Chapter</label><input type="number" id="f-current-chapter" placeholder="0"></div>
+        <div class="form-group full"><label>Rating</label><div class="star-rating" id="star-rating"><button class="star-btn" data-v="1" onclick="setRating(1)">★</button><button class="star-btn" data-v="2" onclick="setRating(2)">★</button><button class="star-btn" data-v="3" onclick="setRating(3)">★</button><button class="star-btn" data-v="4" onclick="setRating(4)">★</button><button class="star-btn" data-v="5" onclick="setRating(5)">★</button></div></div>
+        <div class="form-group full"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Personal notes..."></textarea></div>
+      </div>
+      <input type="hidden" id="f-cover">
+      <input type="hidden" id="f-anilist-id">
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEntry()">Save Manga</button>
+      </div>
     </div>
   </div>
 </div>
@@ -264,7 +277,6 @@ async function apiSheets(body) {
   try {
     const res = await fetch(API_SHEETS, { 
       method: 'POST', 
-      mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body) 
     });
@@ -284,7 +296,7 @@ async function apiSheets(body) {
 async function loadFromSheets() {
   setSyncStatus('syncing', 'Loading...');
   try {
-    const res = await fetch(API_SHEETS + '?action=getAll', { mode: 'cors' });
+    const res = await fetch(API_SHEETS + '?action=getAll');
     const data = await res.json();
     if(data.error) throw new Error(data.error);
     
@@ -310,8 +322,8 @@ async function loadFromSheets() {
     renderMedia();
   } catch(err) { 
     console.error('Load error:', err);
-    setSyncStatus('error', 'Error: ' + err.message); 
-    showToast('Failed to load data: ' + err.message, true);
+    setSyncStatus('error', 'Error'); 
+    showToast('Failed to load data', true);
   }
 }
 
@@ -367,18 +379,17 @@ function selectManga(el){
   document.getElementById('f-cover').value = el.dataset.cover;
   document.getElementById('f-anilist-id').value = el.dataset.id;
   document.getElementById('anilist-search').value = el.dataset.title;
-  const box = document.getElementById('poster-box');
-  if(el.dataset.cover) box.innerHTML = `<img src="${el.dataset.cover}" style="width:70px;height:105px;object-fit:cover;border-radius:6px">`;
-  else box.innerHTML = `<div style="width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px">${el.dataset.title.charAt(0)}</div>`;
   document.getElementById('anilist-dd').style.display = 'none';
+  showToast(`Selected: ${el.dataset.title}`);
 }
 
 async function saveEntry(){
   const title = document.getElementById('f-title').value.trim();
-  if(!title){ showToast('Enter title', true); return; }
+  if(!title){ showToast('Please enter a title', true); return; }
+  
   const entry = {
     id: editingId || Date.now(), 
-    title, 
+    title: title, 
     type: document.getElementById('f-type').value,
     year: parseInt(document.getElementById('f-year').value) || new Date().getFullYear(),
     status: document.getElementById('f-status').value, 
@@ -393,12 +404,20 @@ async function saveEntry(){
     anilistId: document.getElementById('f-anilist-id').value || '', 
     added: editingId ? (mediaData.find(x=>x.id===editingId)?.added || Date.now()) : Date.now()
   };
+  
   setSyncStatus('syncing', 'Saving...');
   try{
     await apiSheets({ action: 'save', manga: entry });
-    if(editingId){ const i = mediaData.findIndex(x=>x.id===editingId); if(i>-1) mediaData[i] = entry; }
-    else mediaData.push(entry);
-    renderMedia(); closeModal(); setSyncStatus('online', 'Saved!'); showToast('Saved!');
+    if(editingId){ 
+      const i = mediaData.findIndex(x=>x.id===editingId); 
+      if(i>-1) mediaData[i] = entry; 
+    } else {
+      mediaData.push(entry);
+    }
+    renderMedia(); 
+    closeModal(); 
+    setSyncStatus('online', 'Saved!'); 
+    showToast(editingId ? 'Manga updated!' : 'Manga added!');
   } catch(err){ 
     showToast('Save failed: ' + err.message, true); 
     setSyncStatus('error', 'Failed');
@@ -432,7 +451,7 @@ function cardHTML(m){
     <div class="poster-placeholder" style="${m.cover ? 'display:none' : 'display:flex'}">${letter}</div>
     <div class="status-badge ${getStatusClass(m.status)}">${getStatusIcon(m.status)}</div>
     <div class="card-info">
-      <div class="card-title">${m.title}</div>
+      <div class="card-title">${escapeHtml(m.title)}</div>
       <div class="card-meta">${typeIcon} ${m.type} · ${m.year || '?'}</div>
       <div class="card-meta">📖 ${m.currentChapter}/${m.chapters || '?'}</div>
       ${m.rating ? `<div class="star-row">${renderStars(m.rating)}</div>` : ''}
@@ -446,16 +465,31 @@ function listHTML(m){
   const typeIcon = {Manga:'📘',Manhwa:'📱',Manhua:'📙'}[m.type] || '📘';
   return `<div class="list-item" onclick="showDetail(${m.id})">
     <div class="list-thumb">${m.cover ? `<img src="${m.cover}">` : letter}</div>
-    <div><div class="list-title">${m.title}</div><div class="list-detail">${typeIcon} ${m.type} · ${m.year || '?'} · Ch ${m.currentChapter}/${m.chapters || '?'}</div></div>
+    <div><div class="list-title">${escapeHtml(m.title)}</div><div class="list-detail">${typeIcon} ${m.type} · ${m.year || '?'} · Ch ${m.currentChapter}/${m.chapters || '?'}</div></div>
     <div class="status-badge ${getStatusClass(m.status)}" style="position:static;padding:.2rem .5rem">${getStatusIcon(m.status)}</div>
   </div>`;
 }
 
+function escapeHtml(str) {
+  if(!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if(m === '&') return '&amp;';
+    if(m === '<') return '&lt;';
+    if(m === '>') return '&gt;';
+    return m;
+  });
+}
+
 function renderMedia(){
-  updateStats(); updateGenreCloud(); updateActiveFilters();
+  updateStats(); 
+  updateGenreCloud(); 
+  updateActiveFilters();
   const data = getFiltered();
   const c = document.getElementById('media-container');
-  if(!data.length){ c.innerHTML = '<div class="empty">📭 No manga found<br><small>Add your first manga using + button</small></div>'; return; }
+  if(!data.length){ 
+    c.innerHTML = '<div class="empty">📭 No manga found<br><small>Add your first manga using + button</small></div>'; 
+    return; 
+  }
   c.innerHTML = currentViewMode === 'grid' ? `<div class="media-grid">${data.map(cardHTML).join('')}</div>` : `<div class="media-list">${data.map(listHTML).join('')}</div>`;
   document.getElementById('btn-grid').className = 'view-btn' + (currentViewMode === 'grid' ? ' active' : '');
   document.getElementById('btn-list').className = 'view-btn' + (currentViewMode === 'list' ? ' active' : '');
@@ -480,7 +514,9 @@ function updateGenreCloud(){
   const genres = new Set();
   mediaData.forEach(m => { if(m.genre) m.genre.split(',').forEach(g => genres.add(g.trim())); });
   const cloud = document.getElementById('genre-cloud');
-  cloud.innerHTML = [...genres].sort().map(g => `<button class="genre-tag ${currentFilterGenre === g ? 'active' : ''}" onclick="filterGenre('${g.replace(/'/g, "\\'")}')">${g}</button>`).join('');
+  if(cloud){
+    cloud.innerHTML = [...genres].sort().map(g => `<button class="genre-tag ${currentFilterGenre === g ? 'active' : ''}" onclick="filterGenre('${g.replace(/'/g, "\\'")}')">${g}</button>`).join('');
+  }
 }
 
 function updateActiveFilters(){
@@ -494,7 +530,7 @@ function updateActiveFilters(){
   if(currentFilterStatus !== 'all') titleText += `${currentFilterStatus === 'reading' ? '📖 Reading' : currentFilterStatus === 'completed' ? '✅ Completed' : currentFilterStatus === 'plan' ? '📋 Plan' : '⛔ Dropped'} `;
   else titleText += 'All ';
   if(currentFilterType !== 'all') titleText += `· ${currentFilterType} `;
-  if(currentFilterGenre !== 'all') titleText += `· <span style="color:var(--gold)">${currentFilterGenre}</span>`;
+  if(currentFilterGenre !== 'all') titleText += `· <span style="color:var(--gold)">${escapeHtml(currentFilterGenre)}</span>`;
   else titleText += '<em>Collection</em>';
   document.getElementById('section-title').innerHTML = titleText;
 }
@@ -505,29 +541,54 @@ function filterGenre(g){ currentFilterGenre = currentFilterGenre === g ? 'all' :
 function setView(v){ currentViewMode = v; renderMedia(); }
 function setRating(v){ currentRating = v; document.querySelectorAll('.star-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.v) <= v)); }
 
-function openModal(id){
-  editingId = id || null;
-  const m = id ? mediaData.find(x => x.id === id) : null;
-  document.getElementById('modal-heading').textContent = m ? 'Edit Manga' : 'Add Manga';
-  document.getElementById('f-title').value = m?.title || '';
-  document.getElementById('f-type').value = m?.type || 'Manga';
-  document.getElementById('f-year').value = m?.year || '';
-  document.getElementById('f-status').value = m?.status || 'plan';
-  document.getElementById('f-genre').value = m?.genre || '';
-  document.getElementById('f-author').value = m?.author || '';
-  document.getElementById('f-chapters').value = m?.chapters || '';
-  document.getElementById('f-current-chapter').value = m?.currentChapter || '';
-  document.getElementById('f-volumes').value = m?.volumes || '';
-  document.getElementById('f-notes').value = m?.notes || '';
-  document.getElementById('f-cover').value = m?.cover || '';
-  document.getElementById('f-anilist-id').value = m?.anilistId || '';
-  setRating(m?.rating || 0);
-  const box = document.getElementById('poster-box');
-  if(m?.cover) box.innerHTML = `<img src="${m.cover}" style="width:70px;height:105px;object-fit:cover;border-radius:6px">`;
-  else box.innerHTML = `<div style="width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px">${m?.title?.charAt(0) || '?'}</div>`;
+function openAddModal() {
+  editingId = null;
+  currentRating = 0;
+  document.getElementById('modal-heading').textContent = 'Add New Manga';
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-type').value = 'Manga';
+  document.getElementById('f-year').value = '';
+  document.getElementById('f-status').value = 'plan';
+  document.getElementById('f-genre').value = '';
+  document.getElementById('f-author').value = '';
+  document.getElementById('f-chapters').value = '';
+  document.getElementById('f-current-chapter').value = '';
+  document.getElementById('f-volumes').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-cover').value = '';
+  document.getElementById('f-anilist-id').value = '';
+  document.getElementById('anilist-search').value = '';
+  setRating(0);
   document.getElementById('modal-overlay').classList.add('open');
 }
-function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); editingId = null; }
+
+function openEditModal(id){
+  editingId = id;
+  const m = mediaData.find(x => x.id === id);
+  if(!m) return;
+  
+  document.getElementById('modal-heading').textContent = 'Edit Manga';
+  document.getElementById('f-title').value = m.title || '';
+  document.getElementById('f-type').value = m.type || 'Manga';
+  document.getElementById('f-year').value = m.year || '';
+  document.getElementById('f-status').value = m.status || 'plan';
+  document.getElementById('f-genre').value = m.genre || '';
+  document.getElementById('f-author').value = m.author || '';
+  document.getElementById('f-chapters').value = m.chapters || '';
+  document.getElementById('f-current-chapter').value = m.currentChapter || '';
+  document.getElementById('f-volumes').value = m.volumes || '';
+  document.getElementById('f-notes').value = m.notes || '';
+  document.getElementById('f-cover').value = m.cover || '';
+  document.getElementById('f-anilist-id').value = m.anilistId || '';
+  document.getElementById('anilist-search').value = m.title || '';
+  setRating(m.rating || 0);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(){ 
+  document.getElementById('modal-overlay').classList.remove('open'); 
+  editingId = null; 
+}
 function closeModalOutside(e){ if(e.target === document.getElementById('modal-overlay')) closeModal(); }
 
 async function updateChapterQuick(id){
@@ -541,9 +602,14 @@ async function updateChapterQuick(id){
   setSyncStatus('syncing', 'Updating...');
   try{
     await apiSheets({ action: 'save', manga: updatedManga });
-    renderMedia(); setSyncStatus('online', 'Updated'); showToast(`Chapter ${newChapter}`);
-    closeDetail(); showDetail(id);
-  } catch(err){ showToast('Update failed', true); }
+    renderMedia(); 
+    setSyncStatus('online', 'Updated'); 
+    showToast(`Chapter updated to ${newChapter}`);
+    closeDetail(); 
+    showDetail(id);
+  } catch(err){ 
+    showToast('Update failed', true); 
+  }
 }
 
 function showDetail(id){
@@ -553,8 +619,8 @@ function showDetail(id){
   const typeIcon = {Manga:'📘',Manhwa:'📱',Manhua:'📙'}[m.type] || '📘';
   const statusIcon = {reading:'📖 Reading',completed:'✅ Completed',plan:'📋 Plan to Read',dropped:'⛔ Dropped'}[m.status] || m.status;
   const progress = m.chapters ? Math.round((m.currentChapter / m.chapters) * 100) : 0;
-  document.getElementById('d-title').innerHTML = `${typeIcon} ${m.title}`;
-  document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} ${m.author ? `· ✍️ ${m.author}` : ''}`;
+  document.getElementById('d-title').innerHTML = `${typeIcon} ${escapeHtml(m.title)}`;
+  document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} ${m.author ? `· ✍️ ${escapeHtml(m.author)}` : ''}`;
   document.getElementById('d-poster').innerHTML = m.cover ? `<img class="detail-poster" src="${m.cover}" onerror="this.outerHTML='<div class=detail-poster style=\"width:80px;height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px\">${letter}</div>';">` : `<div class="detail-poster" style="width:80px;height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px">${letter}</div>`;
   document.getElementById('detail-body').innerHTML = `
     <div style="margin-bottom:1rem">${m.rating ? `<div style="display:flex;align-items:center;gap:.5rem"><span style="font-size:1.5rem;color:var(--gold)">${m.rating}</span><div>${renderStars(m.rating)}</div></div>` : '<div>Not rated</div>'}</div>
@@ -564,9 +630,9 @@ function showDetail(id){
         <div class="chapter-control"><input type="number" id="quick-chapter-input" class="chapter-input" value="${m.currentChapter || 0}" min="0" max="${m.chapters || 9999}"><button class="update-chapter-btn" onclick="updateChapterQuick(${m.id})">Update</button></div>
       </div>${progress > 0 ? `<div class="progress-bar" style="margin-top:.6rem"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
     </div>
-    <div><div class="detail-row"><span>Status</span><span style="color:var(--gold)">${statusIcon}</span></div>${m.author ? `<div class="detail-row"><span>Author</span><span>${m.author}</span></div>` : ''}${m.genre ? `<div class="detail-row"><span>Genres</span><span>${m.genre}</span></div>` : ''}${m.chapters ? `<div class="detail-row"><span>Total Ch</span><span>${m.chapters}</span></div>` : ''}</div>
-    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold);padding:.6rem;margin:1rem 0;font-size:.75rem">"${m.notes}"</div>` : ''}
-    <div style="display:flex;gap:.5rem;margin-top:.5rem"><button class="btn btn-primary" onclick="closeDetail(); openModal(${m.id})">✏️ Edit</button><button class="btn" onclick="deleteEntry(${m.id})" style="border-color:var(--red);color:var(--red)">🗑️ Delete</button></div>
+    <div><div class="detail-row"><span>Status</span><span style="color:var(--gold)">${statusIcon}</span></div>${m.author ? `<div class="detail-row"><span>Author</span><span>${escapeHtml(m.author)}</span></div>` : ''}${m.genre ? `<div class="detail-row"><span>Genres</span><span>${escapeHtml(m.genre)}</span></div>` : ''}${m.chapters ? `<div class="detail-row"><span>Total Ch</span><span>${m.chapters}</span></div>` : ''}</div>
+    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold);padding:.6rem;margin:1rem 0;font-size:.75rem">"${escapeHtml(m.notes)}"</div>` : ''}
+    <div style="display:flex;gap:.5rem;margin-top:.5rem"><button class="btn btn-primary" onclick="closeDetail(); openEditModal(${m.id})">✏️ Edit</button><button class="btn" onclick="deleteEntry(${m.id})" style="border-color:var(--red);color:var(--red)">🗑️ Delete</button></div>
   `;
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -580,8 +646,13 @@ async function deleteEntry(id){
   try{
     await apiSheets({ action: 'delete', id });
     mediaData = mediaData.filter(x => x.id !== id);
-    renderMedia(); closeDetail(); setSyncStatus('online', 'Deleted'); showToast('Removed');
-  } catch(err){ showToast('Delete failed', true); }
+    renderMedia(); 
+    closeDetail(); 
+    setSyncStatus('online', 'Deleted'); 
+    showToast('Manga removed');
+  } catch(err){ 
+    showToast('Delete failed', true); 
+  }
 }
 
 function toggleSidebar(){
