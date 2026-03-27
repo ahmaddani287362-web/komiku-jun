@@ -6,6 +6,7 @@
 <title>Manga Track — Comic & Manga Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* CSS SAMA SEPERTI SEBELUMNYA - Saya tulis ulang agar lengkap */
   *{margin:0;padding:0;box-sizing:border-box}
   :root{--gold:#C9A84C;--gold-light:#E8C97A;--gold-dim:#8B6E30;--bg:#0A0A0C;--surface:#111116;--surface2:#18181F;--surface3:#1F1F28;--border:#2A2A35;--border-soft:#222230;--text:#F0EEE8;--text-muted:#8A8899;--text-dim:#55546A;--red:#E05555;--green:#5EC47A;--blue:#5B8DEF;--purple:#9B6BF0;--pink:#E86F9C;--orange:#E8A75C;--serif:'Cormorant Garamond',serif;--sans:'DM Sans',sans-serif}
   body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
@@ -15,7 +16,7 @@
   .sync-dot.online{background:var(--green)}.sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite}.sync-dot.error{background:var(--red)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   
-  header{position:sticky;top:0;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-soft);padding:0 2rem;height:70px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+  header{position:sticky;top:0;z-index:100;background:rgba(10,10,12,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-soft);padding:0 2rem;height:auto;min-height:70px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
   .logo{font-family:var(--serif);font-size:1.6rem;font-weight:300;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
   .logo span{color:var(--text-dim);font-style:italic}
   .tagline{font-family:var(--sans);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);border-left:1px solid var(--border);padding-left:1rem;margin-left:.5rem}
@@ -109,6 +110,8 @@
   
   .detail-poster{width:80px;height:120px;object-fit:cover;border-radius:6px}
   .detail-row{display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--border-soft)}
+  .detail-row a{color:var(--gold);text-decoration:none}
+  .detail-row a:hover{text-decoration:underline}
   .chapter-control{display:flex;gap:.5rem;align-items:center;margin-top:.5rem}
   .chapter-input{width:80px;background:var(--surface2);border:1px solid var(--border);color:var(--gold);padding:.4rem;border-radius:6px;text-align:center}
   .update-chapter-btn{padding:.4rem .8rem;background:var(--gold);color:#0A0A0C;border:none;border-radius:6px;cursor:pointer;font-size:.7rem}
@@ -238,6 +241,7 @@
         <div class="form-group"><label>Total Chapters</label><input type="number" id="f-chapters" placeholder="0"></div>
         <div class="form-group"><label>Current Chapter</label><input type="number" id="f-current-chapter" placeholder="0"></div>
         <div class="form-group"><label>Volumes</label><input type="text" id="f-volumes" placeholder="Optional"></div>
+        <div class="form-group"><label>URL / Link Baca</label><input type="url" id="f-url" placeholder="https://..."></div>
         <div class="form-group full"><label>Rating</label><div class="star-rating" id="star-rating"><button class="star-btn" data-v="1" onclick="setRating(1)">★</button><button class="star-btn" data-v="2" onclick="setRating(2)">★</button><button class="star-btn" data-v="3" onclick="setRating(3)">★</button><button class="star-btn" data-v="4" onclick="setRating(4)">★</button><button class="star-btn" data-v="5" onclick="setRating(5)">★</button></div></div>
         <div class="form-group full"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Personal notes..."></textarea></div>
       </div>
@@ -304,7 +308,8 @@ async function loadFromSheets() {
       notes: m.notes || '', 
       added: Number(m.added) || Date.now(),
       cover: m.cover || '', 
-      malId: m.malId || m.tmdbid || ''
+      malId: m.malId || m.tmdbid || '',
+      url: m.url || ''
     }));
     
     saveToStorage();
@@ -440,6 +445,7 @@ function importData(file) {
             notes: manga.notes || '',
             cover: manga.cover || '',
             malId: manga.malId || manga.tmdbid || '',
+            url: manga.url || '',
             added: manga.added || Date.now()
           };
           
@@ -603,6 +609,7 @@ async function saveEntry() {
     notes: document.getElementById('f-notes').value || '', 
     cover: document.getElementById('f-cover').value || '',
     malId: document.getElementById('f-mal-id').value || '', 
+    url: document.getElementById('f-url').value || '',
     added: editingId ? (mediaData.find(x=>x.id===editingId)?.added || Date.now()) : Date.now()
   };
   
@@ -836,6 +843,7 @@ function openAddModal() {
   document.getElementById('f-chapters').value = '';
   document.getElementById('f-current-chapter').value = '';
   document.getElementById('f-volumes').value = '';
+  document.getElementById('f-url').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('f-cover').value = '';
   document.getElementById('f-mal-id').value = '';
@@ -863,6 +871,7 @@ function openEditModal(id){
   document.getElementById('f-chapters').value = m.chapters || '';
   document.getElementById('f-current-chapter').value = m.currentChapter || '';
   document.getElementById('f-volumes').value = m.volumes || '';
+  document.getElementById('f-url').value = m.url || '';
   document.getElementById('f-notes').value = m.notes || '';
   document.getElementById('f-cover').value = m.cover || '';
   document.getElementById('f-mal-id').value = m.malId || '';
@@ -903,7 +912,13 @@ function showDetail(id){
         <div class="chapter-control"><input type="number" id="quick-chapter-input" class="chapter-input" value="${m.currentChapter || 0}" min="0" max="${m.chapters || 9999}"><button class="update-chapter-btn" onclick="updateChapterQuick(${m.id})">Update</button></div>
       </div>${progress > 0 ? `<div class="progress-bar" style="margin-top:.6rem"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
     </div>
-    <div><div class="detail-row"><span>Status</span><span style="color:var(--gold)">${statusIcon}</span></div>${m.author ? `<div class="detail-row"><span>Author</span><span>${escapeHtml(m.author)}</span></div>` : ''}${m.genre ? `<div class="detail-row"><span>Genres</span><span>${escapeHtml(m.genre)}</span></div>` : ''}${m.chapters ? `<div class="detail-row"><span>Total Ch</span><span>${m.chapters}</span></div>` : ''}</div>
+    <div>
+      <div class="detail-row"><span>Status</span><span style="color:var(--gold)">${statusIcon}</span></div>
+      ${m.author ? `<div class="detail-row"><span>Author</span><span>${escapeHtml(m.author)}</span></div>` : ''}
+      ${m.genre ? `<div class="detail-row"><span>Genres</span><span>${escapeHtml(m.genre)}</span></div>` : ''}
+      ${m.chapters ? `<div class="detail-row"><span>Total Ch</span><span>${m.chapters}</span></div>` : ''}
+      ${m.url ? `<div class="detail-row"><span>Link Baca</span><span><a href="${m.url}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
+    </div>
     ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold);padding:.6rem;margin:1rem 0;font-size:.75rem">"${escapeHtml(m.notes)}"</div>` : ''}
     <div style="display:flex;gap:.5rem;margin-top:.5rem"><button class="btn btn-primary" onclick="closeDetail(); openEditModal(${m.id})">✏️ Edit</button><button class="btn" onclick="deleteEntry(${m.id})" style="border-color:var(--red);color:var(--red)">🗑️ Delete</button></div>
   `;
