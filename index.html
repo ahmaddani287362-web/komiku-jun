@@ -6,7 +6,6 @@
 <title>Manga Track — Comic & Manga Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* CSS SAMA SEPERTI SEBELUMNYA - Saya tulis ulang agar lengkap */
   *{margin:0;padding:0;box-sizing:border-box}
   :root{--gold:#C9A84C;--gold-light:#E8C97A;--gold-dim:#8B6E30;--bg:#0A0A0C;--surface:#111116;--surface2:#18181F;--surface3:#1F1F28;--border:#2A2A35;--border-soft:#222230;--text:#F0EEE8;--text-muted:#8A8899;--text-dim:#55546A;--red:#E05555;--green:#5EC47A;--blue:#5B8DEF;--purple:#9B6BF0;--pink:#E86F9C;--orange:#E8A75C;--serif:'Cormorant Garamond',serif;--sans:'DM Sans',sans-serif}
   body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
@@ -278,6 +277,17 @@ let currentFilterType = 'all';
 let currentFilterGenre = 'all';
 let currentViewMode = 'grid';
 let jikanTimer = null;
+
+// ==================== ESCAPE HTML ====================
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // ==================== FUNGSI SYNC KE GOOGLE SHEETS ====================
 async function loadFromSheets() {
@@ -731,16 +741,6 @@ function renderStars(r){ return [1,2,3,4,5].map(i => `<span class="star${i<=r?' 
 function getStatusClass(s){ return {reading:'reading',completed:'completed',plan:'plan',dropped:'dropped'}[s] || 'plan'; }
 function getStatusIcon(s){ return {reading:'📖',completed:'✅',plan:'📋',dropped:'⛔'}[s] || '📚'; }
 
-function escapeHtml(str) {
-  if(!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if(m === '&') return '&amp;';
-    if(m === '<') return '&lt;';
-    if(m === '>') return '&gt;';
-    return m;
-  });
-}
-
 function cardHTML(m){
   const letter = m.title.charAt(0).toUpperCase();
   const progress = m.chapters ? Math.round((m.currentChapter / m.chapters) * 100) : 0;
@@ -804,7 +804,7 @@ function updateGenreCloud(){
   mediaData.forEach(m => { if(m.genre) m.genre.split(',').forEach(g => genres.add(g.trim())); });
   const cloud = document.getElementById('genre-cloud');
   if(cloud){
-    cloud.innerHTML = [...genres].sort().map(g => `<button class="genre-tag ${currentFilterGenre === g ? 'active' : ''}" onclick="filterGenre('${g.replace(/'/g, "\\'")}')">${g}</button>`).join('');
+    cloud.innerHTML = [...genres].sort().map(g => `<button class="genre-tag ${currentFilterGenre === g ? 'active' : ''}" onclick="filterGenre('${g.replace(/'/g, "\\'")}')">${escapeHtml(g)}</button>`).join('');
   }
 }
 
@@ -904,6 +904,7 @@ function showDetail(id){
   document.getElementById('d-title').innerHTML = `${typeIcon} ${escapeHtml(m.title)}`;
   document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} ${m.author ? `· ✍️ ${escapeHtml(m.author)}` : ''}`;
   document.getElementById('d-poster').innerHTML = m.cover ? `<img class="detail-poster" src="${m.cover}" onerror="this.outerHTML='<div class=detail-poster style=\"width:80px;height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px\">${letter}</div>';">` : `<div class="detail-poster" style="width:80px;height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:6px">${letter}</div>`;
+  
   document.getElementById('detail-body').innerHTML = `
     <div style="margin-bottom:1rem">${m.rating ? `<div style="display:flex;align-items:center;gap:.5rem"><span style="font-size:1.5rem;color:var(--gold)">${m.rating}</span><div>${renderStars(m.rating)}</div></div>` : '<div>Not rated</div>'}</div>
     <div style="background:var(--surface2);border-radius:8px;padding:.8rem;margin-bottom:1rem">
@@ -913,11 +914,11 @@ function showDetail(id){
       </div>${progress > 0 ? `<div class="progress-bar" style="margin-top:.6rem"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
     </div>
     <div>
-      <div class="detail-row"><span>Status</span><span style="color:var(--gold)">${statusIcon}</span></div>
+      <div class="detail-row"><span>Status</span><span style="color:var(--gold)">${escapeHtml(statusIcon)}</span></div>
       ${m.author ? `<div class="detail-row"><span>Author</span><span>${escapeHtml(m.author)}</span></div>` : ''}
       ${m.genre ? `<div class="detail-row"><span>Genres</span><span>${escapeHtml(m.genre)}</span></div>` : ''}
       ${m.chapters ? `<div class="detail-row"><span>Total Ch</span><span>${m.chapters}</span></div>` : ''}
-      ${m.url ? `<div class="detail-row"><span>Link Baca</span><span><a href="${m.url}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
+      ${m.url ? `<div class="detail-row"><span>Link Baca</span><span><a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
     </div>
     ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold);padding:.6rem;margin:1rem 0;font-size:.75rem">"${escapeHtml(m.notes)}"</div>` : ''}
     <div style="display:flex;gap:.5rem;margin-top:.5rem"><button class="btn btn-primary" onclick="closeDetail(); openEditModal(${m.id})">✏️ Edit</button><button class="btn" onclick="deleteEntry(${m.id})" style="border-color:var(--red);color:var(--red)">🗑️ Delete</button></div>
