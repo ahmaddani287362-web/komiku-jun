@@ -207,7 +207,7 @@
     <div class="modal-header"><div class="modal-title" id="modal-heading">Add Manga</div><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div style="margin-bottom:.8rem">
-        <label>Cari dari MyAnimeList (Jikan API)</label>
+        <label>Cari dari MyAnimeList</label>
         <div class="tmdb-wrap">
           <input class="tmdb-input" id="jikan-search" type="text" placeholder="Ketik judul manga/manhwa..." oninput="onJikanSearch(this.value)" autocomplete="off">
           <div class="tmdb-dropdown" id="jikan-dd"></div>
@@ -260,10 +260,10 @@
 
 <script>
 // ==================== GOOGLE SHEETS API ====================
+// ⚠️ GANTI URL INI DENGAN URL APPS SCRIPT KAMU ⚠️
 const API_SHEETS = 'https://script.google.com/macros/s/AKfycbw7BjczrAVkCTdumUlXPZbWZLGpbs71O_FjqEkH5K_vCwaQKC1WAuoZ6GHdAG_dUD7M/exec';
 
 // ==================== JIKAN API (MyAnimeList) ====================
-// Jikan API sudah mendukung CORS, tidak perlu proxy!
 const JIKAN_API = 'https://api.jikan.moe/v4/manga?q=';
 
 let mediaData = [];
@@ -275,10 +275,65 @@ let currentFilterGenre = 'all';
 let currentViewMode = 'grid';
 let jikanTimer = null;
 
-// ==================== JIKAN API SEARCH FUNCTION ====================
+// ==================== FUNGSI KONEK KE GOOGLE SHEETS ====================
+async function apiSheets(body) { 
+  try {
+    // Gunakan mode no-cors untuk menghindari masalah CORS
+    await fetch(API_SHEETS, { 
+      method: 'POST', 
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body) 
+    });
+    // Karena mode no-cors, kita tidak bisa membaca response
+    // Tapi kita asumsikan sukses
+    return { success: true };
+  } catch(e) {
+    console.error('Fetch error:', e);
+    throw e;
+  }
+}
+
+async function loadFromSheets() {
+  setSyncStatus('syncing', 'Loading...');
+  try {
+    // Gunakan CORS proxy untuk GET request
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(API_SHEETS + '?action=getAll')}`;
+    const res = await fetch(proxyUrl);
+    const data = await res.json();
+    
+    if(data.error) throw new Error(data.error);
+    
+    mediaData = (data.manga || []).map(m => ({
+      id: Number(m.id), 
+      title: m.title || '', 
+      type: m.type || 'Manga', 
+      year: Number(m.year) || 0,
+      status: m.status || 'plan',
+      genre: m.genre || '', 
+      author: m.author || '', 
+      chapters: Number(m.chapters) || 0, 
+      currentChapter: Number(m.currentChapter) || 0,
+      volumes: m.volumes || '', 
+      rating: Number(m.rating) || 0, 
+      notes: m.notes || '', 
+      added: Number(m.added) || Date.now(),
+      cover: m.cover || '', 
+      malId: m.malId || ''
+    }));
+    
+    setSyncStatus('online', 'Synced');
+    renderMedia();
+  } catch(err) { 
+    console.error('Load error:', err);
+    setSyncStatus('error', 'Error'); 
+    showToast('Failed to load data', true);
+  }
+}
+
+// ==================== SEARCH DARI JIKAN API ====================
 async function searchJikan(query) {
   try {
-    // Jikan API rate limit: 1 request per second
     const response = await fetch(`${JIKAN_API}${encodeURIComponent(query)}&limit=8`);
     
     if (!response.ok) {
@@ -289,28 +344,17 @@ async function searchJikan(query) {
     
     if (!data.data || data.data.length === 0) return [];
     
-    // Process results
     const results = data.data.map(manga => {
-      // Get title (prefer english, then romaji)
       const title = manga.title_english || manga.title || 'Unknown';
-      
-      // Get cover image (large version)
-      const coverUrl = manga.images?.jpg?.large_image_url || 
-                       manga.images?.jpg?.image_url || '';
-      
-      // Get year from published date
+      const coverUrl = manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url || '';
       let year = '';
       if (manga.published?.prop?.from?.year) {
         year = manga.published.prop.from.year;
       }
-      
-      // Get author(s)
       let author = '';
       if (manga.authors && manga.authors.length > 0) {
         author = manga.authors[0].name;
       }
-      
-      // Get genres
       let genres = '';
       if (manga.genres && manga.genres.length > 0) {
         genres = manga.genres.map(g => g.name).join(', ');
@@ -325,15 +369,13 @@ async function searchJikan(query) {
         volumes: manga.volumes || '',
         genres: genres,
         author: author,
-        description: manga.synopsis || '',
-        status: manga.status || '',
-        score: manga.score || ''
+        description: manga.synopsis || ''
       };
     });
     
     return results;
   } catch (error) {
-    console.error('Jikan API search error:', error);
+    console.error('Jikan API error:', error);
     showToast('Search failed: ' + error.message, true);
     return [];
   }
@@ -346,7 +388,6 @@ function onJikanSearch(val) {
     return;
   }
   
-  // Show loading indicator
   const dd = document.getElementById('jikan-dd');
   dd.innerHTML = '<div style="padding:.5rem;text-align:center;color:var(--text-dim)">Searching...</div>';
   dd.style.display = 'block';
@@ -393,7 +434,6 @@ function selectJikanManga(el) {
   document.getElementById('f-mal-id').value = el.dataset.id;
   document.getElementById('jikan-search').value = el.dataset.title;
   
-  // Update poster preview
   const posterBox = document.getElementById('poster-box');
   if (el.dataset.cover && el.dataset.cover !== 'null' && el.dataset.cover !== '') {
     posterBox.innerHTML = `<img src="${el.dataset.cover}" style="width:70px;height:105px;object-fit:cover;border-radius:8px" onerror="this.outerHTML='<div style=\'width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:2rem\'>${(el.dataset.title.charAt(0) || '?').toUpperCase()}</div>'">`;
@@ -405,6 +445,7 @@ function selectJikanManga(el) {
   showToast(`Selected: ${el.dataset.title}`);
 }
 
+// ==================== FUNGSI UTAMA ====================
 function setSyncStatus(status, msg) { 
   const dot = document.getElementById('sync-dot'); 
   const text = document.getElementById('sync-status'); 
@@ -417,60 +458,6 @@ function showToast(msg, isError) {
   t.textContent = msg; 
   t.className = 'toast show' + (isError ? ' error' : ''); 
   setTimeout(() => t.classList.remove('show'), 2000); 
-}
-
-async function apiSheets(body) { 
-  try {
-    const res = await fetch(API_SHEETS, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body) 
-    });
-    const text = await res.text();
-    try { 
-      return JSON.parse(text); 
-    } catch(e) { 
-      console.error('Parse error:', text);
-      throw new Error('Invalid response from server'); 
-    }
-  } catch(e) {
-    console.error('Fetch error:', e);
-    throw e;
-  }
-}
-
-async function loadFromSheets() {
-  setSyncStatus('syncing', 'Loading...');
-  try {
-    const res = await fetch(API_SHEETS + '?action=getAll');
-    const data = await res.json();
-    if(data.error) throw new Error(data.error);
-    
-    mediaData = (data.manga || []).map(m => ({
-      id: Number(m.id), 
-      title: m.title || '', 
-      type: m.type || 'Manga', 
-      year: Number(m.year) || 0,
-      status: m.status || 'plan',
-      genre: m.genre || '', 
-      author: m.author || '', 
-      chapters: Number(m.chapters) || 0, 
-      currentChapter: Number(m.currentChapter) || 0,
-      volumes: m.volumes || '', 
-      rating: Number(m.rating) || 0, 
-      notes: m.notes || '', 
-      added: Number(m.added) || Date.now(),
-      cover: m.cover || '', 
-      malId: m.malId || ''
-    }));
-    
-    setSyncStatus('online', 'Synced');
-    renderMedia();
-  } catch(err) { 
-    console.error('Load error:', err);
-    setSyncStatus('error', 'Error'); 
-    showToast('Failed to load data', true);
-  }
 }
 
 async function saveEntry(){
