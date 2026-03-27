@@ -382,8 +382,8 @@
           <input type="number" id="f-current-chapter" placeholder="Chapter ke-?" min="0">
         </div>
         <div class="form-group">
-          <label>Progress (%)</label>
-          <input type="number" id="f-progress" placeholder="0–100" min="0" max="100">
+          <label>URL / Link Baca</label>
+          <input type="url" id="f-url" placeholder="https://...">
         </div>
         <div class="form-group">
           <label>Rating</label>
@@ -490,12 +490,12 @@ async function loadFromSheets() {
       author: String(m.author || ''),
       chapters: String(m.chapters || ''),
       currentChapter: Number(m.currentChapter || m.currentchapter || 0),
-      progress: Number(m.progress || 0),
       rating: Number(m.rating || 0),
       notes: String(m.notes || ''),
       added: Number(m.added || 0),
       cover: String(m.cover || ''),
-      malId: String(m.malId || '')
+      malId: String(m.malId || ''),
+      url: String(m.url || '')
     }));
     
     setSyncStatus('online', 'Synced');
@@ -616,10 +616,10 @@ async function saveEntry() {
     author: document.getElementById('f-author'),
     chapters: document.getElementById('f-chapters'),
     currentChapter: document.getElementById('f-current-chapter'),
-    progress: document.getElementById('f-progress'),
     notes: document.getElementById('f-notes'),
     cover: document.getElementById('f-cover'),
-    malId: document.getElementById('f-mal-id')
+    malId: document.getElementById('f-mal-id'),
+    url: document.getElementById('f-url')
   };
   
   const title = els.title.value.trim();
@@ -630,6 +630,7 @@ async function saveEntry() {
   
   const coverValue = els.cover ? els.cover.value : '';
   const malIdValue = els.malId ? els.malId.value : '';
+  const urlValue = els.url ? els.url.value : '';
   
   const entry = {
     id: editingId || Date.now(),
@@ -641,11 +642,11 @@ async function saveEntry() {
     author: els.author ? (els.author.value || '').trim() : '',
     chapters: els.chapters ? (els.chapters.value || '').trim() : '',
     currentChapter: parseInt(els.currentChapter ? els.currentChapter.value : 0) || 0,
-    progress: parseInt(els.progress ? els.progress.value : 0) || 0,
     rating: currentRating || 0,
     notes: els.notes ? (els.notes.value || '').trim() : '',
     cover: coverValue,
     malId: malIdValue,
+    url: urlValue,
     added: editingId ? (mediaData.find(x => x.id === editingId)?.added || Date.now()) : Date.now()
   };
   
@@ -728,7 +729,6 @@ function cardHTML(m) {
   const chapterText = formatChapter(m.currentChapter, m.chapters);
   const typeClass = getTypeClass(m.type);
   const typeIcon = getTypeIcon(m.type);
-  const progress = m.chapters && parseInt(m.chapters) > 0 ? Math.round((m.currentChapter / parseInt(m.chapters)) * 100) : m.progress;
   
   let posterHTML;
   if (hasCover) {
@@ -737,7 +737,7 @@ function cardHTML(m) {
     posterHTML = `<div class="poster-placeholder" style="background:${bg};display:flex"><span style="opacity:.4">${letter}</span></div>`;
   }
   
-  return `<div class="media-card" onclick="showDetail(${m.id})">${posterHTML}<span class="card-badge ${statusClasses[m.status]}">${statusLabels[m.status]}</span><div class="card-info"><div class="card-title">${m.title}</div><div class="card-meta"><span class="card-year">${m.year || '—'}</span><span>·</span><span class="card-type ${typeClass}">${typeIcon} ${m.type}</span></div>${chapterText ? `<div class="chapter-badge">${chapterText}</div>` : ''}${m.rating ? `<div class="star-row">${renderStars(m.rating)}</div>` : ''}${progress > 0 && progress < 100 ? `<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}</div></div>`;
+  return `<div class="media-card" onclick="showDetail(${m.id})">${posterHTML}<span class="card-badge ${statusClasses[m.status]}">${statusLabels[m.status]}</span><div class="card-info"><div class="card-title">${escapeHtml(m.title)}</div><div class="card-meta"><span class="card-year">${m.year || '—'}</span><span>·</span><span class="card-type ${typeClass}">${typeIcon} ${m.type}</span></div>${chapterText ? `<div class="chapter-badge">${chapterText}</div>` : ''}${m.rating ? `<div class="star-row">${renderStars(m.rating)}</div>` : ''}</div></div>`;
 }
 
 function listHTML(m) {
@@ -746,7 +746,7 @@ function listHTML(m) {
   const chapterText = formatChapter(m.currentChapter, m.chapters);
   const typeIcon = getTypeIcon(m.type);
   
-  return `<div class="list-item" onclick="showDetail(${m.id})">${thumb}<div class="list-body"><div class="list-title">${m.title}</div><div class="list-detail"><span>${m.year || '—'}</span><span>·</span><span>${typeIcon} ${m.type}</span>${m.genre ? `<span>·</span><span>${m.genre.split(',')[0].trim()}</span>` : ''}${chapterText ? `<span>·</span><span style="color:var(--gold)">${chapterText}</span>` : ''}</div>${m.rating ? `<div class="star-row" style="margin-top:.3rem">${renderStars(m.rating)}</div>` : ''}</div><span class="card-badge ${statusClasses[m.status]}" style="position:static">${statusLabels[m.status]}</span></div>`;
+  return `<div class="list-item" onclick="showDetail(${m.id})">${thumb}<div class="list-body"><div class="list-title">${escapeHtml(m.title)}</div><div class="list-detail"><span>${m.year || '—'}</span><span>·</span><span>${typeIcon} ${m.type}</span>${m.genre ? `<span>·</span><span>${m.genre.split(',')[0].trim()}</span>` : ''}${chapterText ? `<span>·</span><span style="color:var(--gold)">${chapterText}</span>` : ''}</div>${m.rating ? `<div class="star-row" style="margin-top:.3rem">${renderStars(m.rating)}</div>` : ''}</div><span class="card-badge ${statusClasses[m.status]}" style="position:static">${statusLabels[m.status]}</span></div>`;
 }
 
 function renderMedia() {
@@ -820,6 +820,16 @@ function escapeString(s) {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
 function updateActiveFilters() {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   
@@ -884,7 +894,7 @@ function openModal(id) {
   document.getElementById('f-author').value = m ? m.author : '';
   document.getElementById('f-chapters').value = m ? m.chapters : '';
   document.getElementById('f-current-chapter').value = m ? (m.currentChapter || '') : '';
-  document.getElementById('f-progress').value = m ? m.progress : '';
+  document.getElementById('f-url').value = m ? (m.url || '') : '';
   document.getElementById('f-notes').value = m ? m.notes : '';
   document.getElementById('f-cover').value = m ? (m.cover || '') : '';
   document.getElementById('f-mal-id').value = m ? (m.malId || '') : '';
@@ -910,6 +920,32 @@ function setRating(v) {
   document.querySelectorAll('#star-rating .star-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.v) <= v));
 }
 
+// Fungsi update chapter langsung di detail modal
+async function updateChapterDirect(id) {
+  const input = document.getElementById('quick-chapter-input');
+  const newChapter = parseInt(input.value) || 0;
+  const manga = mediaData.find(x => x.id === id);
+  if (!manga) return;
+  
+  const updatedManga = { ...manga, currentChapter: newChapter };
+  const idx = mediaData.findIndex(x => x.id === id);
+  if (idx !== -1) mediaData[idx] = updatedManga;
+  
+  setSyncStatus('syncing', 'Updating...');
+  try {
+    await apiSheets({ action: 'save', manga: updatedManga });
+    renderMedia();
+    setSyncStatus('online', 'Updated');
+    showToast(`Chapter updated to ${newChapter}`);
+    // Update detail view
+    closeDetail();
+    showDetail(id);
+  } catch (err) {
+    showToast('Update failed', true);
+    setSyncStatus('error', 'Failed');
+  }
+}
+
 function showDetail(id) {
   const m = mediaData.find(x => x.id === id);
   if (!m) return;
@@ -917,13 +953,50 @@ function showDetail(id) {
   const letter = m.title.charAt(0).toUpperCase();
   const chapterText = formatChapter(m.currentChapter, m.chapters);
   const typeIcon = getTypeIcon(m.type);
-  const progress = m.chapters && parseInt(m.chapters) > 0 ? Math.round((m.currentChapter / parseInt(m.chapters)) * 100) : m.progress;
+  const totalChapters = parseInt(m.chapters) || 0;
+  const progress = totalChapters > 0 ? Math.round((m.currentChapter / totalChapters) * 100) : 0;
   
   document.getElementById('d-title').textContent = `${typeIcon} ${m.title}`;
   document.getElementById('d-meta').textContent = `${m.type} · ${m.year || '—'} · ${m.genre || 'No genre'} · ${m.author ? '✍️ ' + m.author : ''}`;
   document.getElementById('d-poster').innerHTML = m.cover && m.cover.trim() !== '' ? `<img class="detail-poster" src="${m.cover}" onerror="this.outerHTML='<div class=detail-poster-ph>${letter}</div>'">` : `<div class="detail-poster-ph">${letter}</div>`;
   
-  document.getElementById('detail-body').innerHTML = `<div style="display:flex;align-items:flex-end;gap:1rem;margin-bottom:1.5rem">${m.rating ? `<div class="detail-rating-big">${m.rating}.0</div><div>${renderStars(m.rating)}<div style="font-size:.75rem;color:var(--text-dim);margin-top:.25rem">Your rating</div></div>` : '<div style="color:var(--text-dim)">Not yet rated</div>'}</div>${chapterText ? `<div style="margin-bottom:1rem;font-size:.9rem;color:var(--gold)">📖 ${chapterText}</div>` : ''}${progress > 0 ? `<div style="margin-bottom:1.5rem"><div style="font-size:.75rem;color:var(--text-dim);margin-bottom:.5rem">Progress — ${progress}%</div><div class="progress-bar" style="height:3px"><div class="progress-fill" style="width:${progress}%"></div></div></div>` : ''}<div style="margin-bottom:1rem"><div class="detail-row"><span class="detail-key">Status</span><span class="card-badge ${statusClasses[m.status]}" style="position:static">${statusLabels[m.status]}</span></div>${m.author ? `<div class="detail-row"><span class="detail-key">Author / Artist</span><span class="detail-val">${m.author}</span></div>` : ''}${m.chapters ? `<div class="detail-row"><span class="detail-key">Total Chapters</span><span class="detail-val">${m.chapters}</span></div>` : ''}${m.currentChapter ? `<div class="detail-row"><span class="detail-key">Current Chapter</span><span class="detail-val" style="color:var(--gold)">Chapter ${m.currentChapter}</span></div>` : ''}</div>${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold-dim);padding:.75rem 1rem;font-size:.875rem;color:var(--text-muted);line-height:1.6;margin-bottom:1rem"><em>"${m.notes}"</em></div>` : ''}<div style="display:flex;gap:.75rem;padding-top:.5rem"><button class="btn btn-primary" onclick="closeDetail(); openModal(${m.id})">Edit</button><button class="btn" onclick="deleteEntry(${m.id})" style="border-color:rgba(224,85,85,.4);color:var(--red)">Delete</button></div>`;
+  document.getElementById('detail-body').innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:1rem;margin-bottom:1.5rem">
+      ${m.rating ? `<div class="detail-rating-big">${m.rating}.0</div><div>${renderStars(m.rating)}<div style="font-size:.75rem;color:var(--text-dim);margin-top:.25rem">Your rating</div></div>` : '<div style="color:var(--text-dim)">Not yet rated</div>'}
+    </div>
+    
+    <!-- QUICK CHAPTER UPDATE SECTION -->
+    <div style="background:var(--surface2);border-radius:8px;padding:1rem;margin-bottom:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-bottom:.25rem">CURRENT PROGRESS</div>
+          <div style="font-size:1.3rem;font-weight:500;color:var(--gold)">${m.currentChapter || 0} / ${m.chapters || '?'}</div>
+          ${totalChapters > 0 ? `<div style="font-size:.7rem;color:var(--text-muted)">${progress}% completed</div>` : ''}
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="number" id="quick-chapter-input" class="chapter-input" value="${m.currentChapter || 0}" min="0" max="${totalChapters || 9999}" style="width:100px;background:var(--surface2);border:1px solid var(--border);color:var(--gold);padding:.5rem;border-radius:6px;text-align:center">
+          <button class="update-chapter-btn" onclick="updateChapterDirect(${m.id})" style="padding:.5rem 1rem;background:var(--gold);color:#0A0A0C;border:none;border-radius:6px;cursor:pointer;font-size:.75rem">Update</button>
+        </div>
+      </div>
+      ${progress > 0 ? `<div class="progress-bar" style="margin-top:.75rem"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
+    </div>
+    
+    <div style="margin-bottom:1rem">
+      <div class="detail-row"><span class="detail-key">Status</span><span class="card-badge ${statusClasses[m.status]}" style="position:static">${statusLabels[m.status]}</span></div>
+      ${m.author ? `<div class="detail-row"><span class="detail-key">Author / Artist</span><span class="detail-val">${escapeHtml(m.author)}</span></div>` : ''}
+      ${m.genre ? `<div class="detail-row"><span class="detail-key">Genres</span><span class="detail-val">${escapeHtml(m.genre)}</span></div>` : ''}
+      ${m.chapters ? `<div class="detail-row"><span class="detail-key">Total Chapters</span><span class="detail-val">${m.chapters}</span></div>` : ''}
+      ${m.currentChapter ? `<div class="detail-row"><span class="detail-key">Current Chapter</span><span class="detail-val" style="color:var(--gold)">Chapter ${m.currentChapter}</span></div>` : ''}
+      ${m.url ? `<div class="detail-row"><span class="detail-key">Link Baca</span><span class="detail-val"><a href="${m.url}" target="_blank" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
+    </div>
+    
+    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold-dim);padding:.75rem 1rem;font-size:.875rem;color:var(--text-muted);line-height:1.6;margin-bottom:1rem"><em>"${escapeHtml(m.notes)}"</em></div>` : ''}
+    
+    <div style="display:flex;gap:.75rem;padding-top:.5rem">
+      <button class="btn btn-primary" onclick="closeDetail(); openModal(${m.id})">✏️ Edit</button>
+      <button class="btn" onclick="deleteEntry(${m.id})" style="border-color:rgba(224,85,85,.4);color:var(--red)">🗑️ Delete</button>
+    </div>
+  `;
   
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -1052,7 +1125,7 @@ function renderMedia(){
   const data=getFiltered();
   const c=document.getElementById('media-container');
   if(!data.length){c.innerHTML='<div class="empty"><div class="empty-icon">📚</div><div class="empty-title">No titles found</div><div class="empty-sub">Add your first manga or manhwa, or adjust filters</div></div>';}
-  else{c.innerHTML=viewMode==='grid'?`<div class="media-grid">${data.map(cardHTML).join('')}</div>`:`<div class="media-list">${data.map(listHTML).join('')}</div>`;}
+  else{c.innerHTML=viewMode==='grid'?`<div class="media-grid">${data.map(cardHTML).join('')}</div>`:`<div class="media-list">${data.map(listHTML).join('')</div>`;}
   document.getElementById('btn-grid').className='view-btn'+(viewMode==='grid'?' active':'');
   document.getElementById('btn-list').className='view-btn'+(viewMode==='list'?' active':'');
   updateMobileChips();
