@@ -207,10 +207,10 @@
     <div class="modal-header"><div class="modal-title" id="modal-heading">Add Manga</div><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div style="margin-bottom:.8rem">
-        <label>Cari dari MangaDex</label>
+        <label>Cari dari MyAnimeList (Jikan API)</label>
         <div class="tmdb-wrap">
-          <input class="tmdb-input" id="mangadex-search" type="text" placeholder="Ketik judul manga/manhwa..." oninput="onMangaDexSearch(this.value)" autocomplete="off">
-          <div class="tmdb-dropdown" id="mangadex-dd"></div>
+          <input class="tmdb-input" id="jikan-search" type="text" placeholder="Ketik judul manga/manhwa..." oninput="onJikanSearch(this.value)" autocomplete="off">
+          <div class="tmdb-dropdown" id="jikan-dd"></div>
         </div>
       </div>
       
@@ -239,7 +239,7 @@
         <div class="form-group full"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Personal notes..."></textarea></div>
       </div>
       <input type="hidden" id="f-cover">
-      <input type="hidden" id="f-mangadex-id">
+      <input type="hidden" id="f-mal-id">
       <div class="modal-footer">
         <button class="btn" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveEntry()">Save Manga</button>
@@ -262,9 +262,9 @@
 // ==================== GOOGLE SHEETS API ====================
 const API_SHEETS = 'https://script.google.com/macros/s/AKfycbw7BjczrAVkCTdumUlXPZbWZLGpbs71O_FjqEkH5K_vCwaQKC1WAuoZ6GHdAG_dUD7M/exec';
 
-// ==================== MANGADEX API dengan CORS PROXY ====================
-const CORS_PROXY = 'https://corsproxy.io/?';
-const MANGADEX_API = 'https://api.mangadex.org';
+// ==================== JIKAN API (MyAnimeList) ====================
+// Jikan API sudah mendukung CORS, tidak perlu proxy!
+const JIKAN_API = 'https://api.jikan.moe/v4/manga?q=';
 
 let mediaData = [];
 let currentRating = 0;
@@ -273,108 +273,86 @@ let currentFilterStatus = 'all';
 let currentFilterType = 'all';
 let currentFilterGenre = 'all';
 let currentViewMode = 'grid';
-let mangadexTimer = null;
+let jikanTimer = null;
 
-// ==================== MANGADEX SEARCH FUNCTION dengan CORS PROXY ====================
-async function searchMangaDex(query) {
+// ==================== JIKAN API SEARCH FUNCTION ====================
+async function searchJikan(query) {
   try {
-    // Build original MangaDex URL
-    const searchUrl = `${MANGADEX_API}/manga?title=${encodeURIComponent(query)}&limit=8&includes[]=cover_art&includes[]=author&includes[]=artist`;
-    // Wrap with CORS proxy
-    const proxyUrl = `${CORS_PROXY}${encodeURIComponent(searchUrl)}`;
+    // Jikan API rate limit: 1 request per second
+    const response = await fetch(`${JIKAN_API}${encodeURIComponent(query)}&limit=8`);
     
-    console.log('Fetching:', proxyUrl);
-    const response = await fetch(proxyUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
     const data = await response.json();
     
     if (!data.data || data.data.length === 0) return [];
     
     // Process results
     const results = data.data.map(manga => {
-      const attributes = manga.attributes;
+      // Get title (prefer english, then romaji)
+      const title = manga.title_english || manga.title || 'Unknown';
       
-      // Get cover art filename
-      let coverFilename = null;
-      let authorName = '';
-      let artistName = '';
+      // Get cover image (large version)
+      const coverUrl = manga.images?.jpg?.large_image_url || 
+                       manga.images?.jpg?.image_url || '';
       
-      // Find cover art in relationships
-      const coverRelation = manga.relationships.find(rel => rel.type === 'cover_art');
-      if (coverRelation && coverRelation.attributes) {
-        coverFilename = coverRelation.attributes.fileName;
+      // Get year from published date
+      let year = '';
+      if (manga.published?.prop?.from?.year) {
+        year = manga.published.prop.from.year;
       }
       
-      // Find author and artist
-      const authorRelation = manga.relationships.find(rel => rel.type === 'author');
-      if (authorRelation && authorRelation.attributes) {
-        authorName = authorRelation.attributes.name;
+      // Get author(s)
+      let author = '';
+      if (manga.authors && manga.authors.length > 0) {
+        author = manga.authors[0].name;
       }
       
-      const artistRelation = manga.relationships.find(rel => rel.type === 'artist');
-      if (artistRelation && artistRelation.attributes) {
-        artistName = artistRelation.attributes.name;
-      }
-      
-      // Get cover URL
-      const coverUrl = coverFilename ? 
-        `https://uploads.mangadex.org/covers/${manga.id}/${coverFilename}.256.jpg` : '';
-      
-      // Get genres from tags (filter only genre tags)
-      const genres = attributes.tags
-        .filter(tag => tag.attributes && tag.attributes.group === 'genre')
-        .map(tag => tag.attributes.name.en || tag.attributes.name)
-        .slice(0, 5);
-      
-      // Get title (prefer english, then romaji, then original)
-      const title = attributes.title?.en || 
-                    attributes.title?.en_us || 
-                    Object.values(attributes.title || {})[0] || 
-                    'Unknown';
-      
-      // Get year
-      const year = attributes.year || '';
-      
-      // Get chapters count (from lastChapter or count chapters)
-      let chapters = attributes.lastChapter || '';
-      if (!chapters && attributes.chapterNumbers) {
-        chapters = attributes.chapterNumbers.length;
+      // Get genres
+      let genres = '';
+      if (manga.genres && manga.genres.length > 0) {
+        genres = manga.genres.map(g => g.name).join(', ');
       }
       
       return {
-        id: manga.id,
+        id: manga.mal_id,
         title: title,
         cover: coverUrl,
         year: year,
-        chapters: chapters,
-        volumes: attributes.lastVolume || '',
-        genres: genres.join(', '),
-        author: authorName || artistName || '',
-        description: attributes.description?.en || attributes.description?.en_us || ''
+        chapters: manga.chapters || '',
+        volumes: manga.volumes || '',
+        genres: genres,
+        author: author,
+        description: manga.synopsis || '',
+        status: manga.status || '',
+        score: manga.score || ''
       };
     });
     
     return results;
   } catch (error) {
-    console.error('MangaDex search error:', error);
+    console.error('Jikan API search error:', error);
     showToast('Search failed: ' + error.message, true);
     return [];
   }
 }
 
-function onMangaDexSearch(val) {
-  clearTimeout(mangadexTimer);
+function onJikanSearch(val) {
+  clearTimeout(jikanTimer);
   if (val.length < 2) {
-    document.getElementById('mangadex-dd').style.display = 'none';
+    document.getElementById('jikan-dd').style.display = 'none';
     return;
   }
   
   // Show loading indicator
-  const dd = document.getElementById('mangadex-dd');
+  const dd = document.getElementById('jikan-dd');
   dd.innerHTML = '<div style="padding:.5rem;text-align:center;color:var(--text-dim)">Searching...</div>';
   dd.style.display = 'block';
   
-  mangadexTimer = setTimeout(async () => {
-    const results = await searchMangaDex(val);
+  jikanTimer = setTimeout(async () => {
+    const results = await searchJikan(val);
     
     if (!results || results.length === 0) {
       dd.innerHTML = '<div style="padding:.5rem;text-align:center;color:var(--text-dim)">No results found</div>';
@@ -382,7 +360,7 @@ function onMangaDexSearch(val) {
     }
     
     dd.innerHTML = results.map(manga => `
-      <div class="tmdb-item" onclick="selectMangaDex(this)" 
+      <div class="tmdb-item" onclick="selectJikanManga(this)" 
         data-id="${manga.id}"
         data-title="${escapeHtml(manga.title)}"
         data-cover="${manga.cover}"
@@ -404,7 +382,7 @@ function onMangaDexSearch(val) {
   }, 400);
 }
 
-function selectMangaDex(el) {
+function selectJikanManga(el) {
   document.getElementById('f-title').value = el.dataset.title;
   document.getElementById('f-year').value = el.dataset.year;
   document.getElementById('f-chapters').value = el.dataset.chapters;
@@ -412,8 +390,8 @@ function selectMangaDex(el) {
   document.getElementById('f-genre').value = el.dataset.genres;
   document.getElementById('f-author').value = el.dataset.author;
   document.getElementById('f-cover').value = el.dataset.cover;
-  document.getElementById('f-mangadex-id').value = el.dataset.id;
-  document.getElementById('mangadex-search').value = el.dataset.title;
+  document.getElementById('f-mal-id').value = el.dataset.id;
+  document.getElementById('jikan-search').value = el.dataset.title;
   
   // Update poster preview
   const posterBox = document.getElementById('poster-box');
@@ -423,7 +401,7 @@ function selectMangaDex(el) {
     posterBox.innerHTML = `<div style="width:70px;height:105px;background:var(--surface2);display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:2rem">${(el.dataset.title.charAt(0) || '?').toUpperCase()}</div>`;
   }
   
-  document.getElementById('mangadex-dd').style.display = 'none';
+  document.getElementById('jikan-dd').style.display = 'none';
   showToast(`Selected: ${el.dataset.title}`);
 }
 
@@ -483,7 +461,7 @@ async function loadFromSheets() {
       notes: m.notes || '', 
       added: Number(m.added) || Date.now(),
       cover: m.cover || '', 
-      mangadexId: m.mangadexId || ''
+      malId: m.malId || ''
     }));
     
     setSyncStatus('online', 'Synced');
@@ -513,7 +491,7 @@ async function saveEntry(){
     rating: currentRating,
     notes: document.getElementById('f-notes').value || '', 
     cover: document.getElementById('f-cover').value || '',
-    mangadexId: document.getElementById('f-mangadex-id').value || '', 
+    malId: document.getElementById('f-mal-id').value || '', 
     added: editingId ? (mediaData.find(x=>x.id===editingId)?.added || Date.now()) : Date.now()
   };
   
@@ -668,8 +646,8 @@ function openAddModal() {
   document.getElementById('f-volumes').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('f-cover').value = '';
-  document.getElementById('f-mangadex-id').value = '';
-  document.getElementById('mangadex-search').value = '';
+  document.getElementById('f-mal-id').value = '';
+  document.getElementById('jikan-search').value = '';
   setRating(0);
   
   const posterBox = document.getElementById('poster-box');
@@ -695,8 +673,8 @@ function openEditModal(id){
   document.getElementById('f-volumes').value = m.volumes || '';
   document.getElementById('f-notes').value = m.notes || '';
   document.getElementById('f-cover').value = m.cover || '';
-  document.getElementById('f-mangadex-id').value = m.mangadexId || '';
-  document.getElementById('mangadex-search').value = m.title || '';
+  document.getElementById('f-mal-id').value = m.malId || '';
+  document.getElementById('jikan-search').value = m.title || '';
   setRating(m.rating || 0);
   
   const posterBox = document.getElementById('poster-box');
@@ -785,7 +763,7 @@ function toggleSidebar(){
   else aside.style.display = 'block';
 }
 window.addEventListener('resize', () => { if(window.innerWidth > 900) document.querySelector('aside').style.display = 'block'; });
-document.addEventListener('click', e => { if(!e.target.closest('.tmdb-wrap')) document.getElementById('mangadex-dd').style.display = 'none'; });
+document.addEventListener('click', e => { if(!e.target.closest('.tmdb-wrap')) document.getElementById('jikan-dd').style.display = 'none'; });
 
 // Load data saat halaman dimuat
 loadFromSheets();
