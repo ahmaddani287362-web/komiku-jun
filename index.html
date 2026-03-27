@@ -137,6 +137,7 @@
     <div class="tagline">track your manga & manhwa journey</div>
   </div>
   <div>
+    <button class="btn" onclick="loadFromSheets()">↻ Sync</button>
     <button class="btn btn-primary" onclick="openAddModal()">+ Add</button>
   </div>
 </header>
@@ -258,7 +259,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== JIKAN API (MyAnimeList) - GRATIS, NO API KEY ====================
+// ==================== KONFIGURASI ====================
+const WORKER_URL = 'https://manga-proxy.ahmaddani287362.workers.dev';
 const JIKAN_API = 'https://api.jikan.moe/v4/manga?q=';
 
 let mediaData = [];
@@ -270,58 +272,107 @@ let currentFilterGenre = 'all';
 let currentViewMode = 'grid';
 let jikanTimer = null;
 
-// ==================== LOAD & SAVE ke LOCALSTORAGE ====================
+// ==================== FUNGSI SYNC KE GOOGLE SHEETS (via Worker) ====================
+async function loadFromSheets() {
+  const syncDot = document.getElementById('sync-dot');
+  const syncStatus = document.getElementById('sync-status');
+  
+  syncDot.className = 'sync-dot syncing';
+  syncStatus.textContent = 'Loading from Google Sheets...';
+  
+  try {
+    const response = await fetch(WORKER_URL);
+    const data = await response.json();
+    
+    if (data.error) throw new Error(data.error);
+    
+    mediaData = (data.manga || []).map(m => ({
+      id: Number(m.id), 
+      title: m.title || '', 
+      type: m.type || 'Manga', 
+      year: Number(m.year) || 0,
+      status: m.status || 'plan',
+      genre: m.genre || '', 
+      author: m.author || '', 
+      chapters: Number(m.chapters) || 0, 
+      currentChapter: Number(m.currentChapter) || 0,
+      volumes: m.volumes || '', 
+      rating: Number(m.rating) || 0, 
+      notes: m.notes || '', 
+      added: Number(m.added) || Date.now(),
+      cover: m.cover || '', 
+      malId: m.malId || ''
+    }));
+    
+    saveToStorage();
+    
+    syncDot.className = 'sync-dot online';
+    syncStatus.textContent = 'Synced with Google Sheets';
+    renderMedia();
+    showToast('Data loaded from Google Sheets!');
+    
+    setTimeout(() => {
+      if (syncStatus.textContent === 'Synced with Google Sheets') {
+        syncStatus.textContent = 'Ready';
+      }
+    }, 2000);
+    
+  } catch (err) { 
+    console.error('Load error:', err);
+    syncDot.className = 'sync-dot error';
+    syncStatus.textContent = 'Error loading from Sheets';
+    showToast('Failed to load from Google Sheets. Using local data.', true);
+    loadFromStorage();
+  }
+}
+
+async function saveToSheets(entry) {
+  const response = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'save', manga: entry })
+  });
+  return await response.json();
+}
+
+async function deleteFromSheets(id) {
+  const response = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete', id: id })
+  });
+  return await response.json();
+}
+
+// ==================== LOCAL STORAGE (BACKUP) ====================
 function loadFromStorage() {
   const saved = localStorage.getItem('mangaTracker');
   if (saved) {
     mediaData = JSON.parse(saved);
   } else {
-    // Data contoh
-    mediaData = [
-      { id: 1, title: "Solo Leveling", type: "Manhwa", year: 2018, status: "completed", genre: "Action, Fantasy", author: "Chugong", chapters: 179, currentChapter: 179, volumes: "14", rating: 5, notes: "Best manhwa ever!", cover: "", added: Date.now() - 86400000 },
-      { id: 2, title: "One Piece", type: "Manga", year: 1997, status: "reading", genre: "Action, Adventure, Fantasy", author: "Eiichiro Oda", chapters: 1088, currentChapter: 1050, volumes: "105", rating: 5, notes: "Peak fiction!", cover: "", added: Date.now() }
-    ];
+    mediaData = [];
   }
   renderMedia();
 }
 
 function saveToStorage() {
   localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
-  document.getElementById('sync-status').textContent = 'Saved to Browser';
-  document.getElementById('sync-dot').className = 'sync-dot online';
-  setTimeout(() => {
-    document.getElementById('sync-status').textContent = 'Ready';
-  }, 2000);
 }
 
-// ==================== SEARCH DARI JIKAN API (GRATIS, NO API KEY) ====================
+// ==================== SEARCH DARI JIKAN API ====================
 async function searchJikan(query) {
   try {
     const response = await fetch(`${JIKAN_API}${encodeURIComponent(query)}&limit=8`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    
     if (!data.data || data.data.length === 0) return [];
     
-    const results = data.data.map(manga => {
+    return data.data.map(manga => {
       const title = manga.title_english || manga.title || 'Unknown';
       const coverUrl = manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url || '';
-      let year = '';
-      if (manga.published?.prop?.from?.year) {
-        year = manga.published.prop.from.year;
-      }
-      let author = '';
-      if (manga.authors && manga.authors.length > 0) {
-        author = manga.authors[0].name;
-      }
-      let genres = '';
-      if (manga.genres && manga.genres.length > 0) {
-        genres = manga.genres.map(g => g.name).join(', ');
-      }
+      let year = manga.published?.prop?.from?.year || '';
+      let author = manga.authors?.[0]?.name || '';
+      let genres = manga.genres?.map(g => g.name).join(', ') || '';
       
       return {
         id: manga.mal_id,
@@ -331,12 +382,9 @@ async function searchJikan(query) {
         chapters: manga.chapters || '',
         volumes: manga.volumes || '',
         genres: genres,
-        author: author,
-        description: manga.synopsis || ''
+        author: author
       };
     });
-    
-    return results;
   } catch (error) {
     console.error('Jikan API error:', error);
     showToast('Search failed: ' + error.message, true);
@@ -416,9 +464,9 @@ function showToast(msg, isError) {
   setTimeout(() => t.classList.remove('show'), 2000); 
 }
 
-function saveEntry(){
+async function saveEntry() {
   const title = document.getElementById('f-title').value.trim();
-  if(!title){ showToast('Please enter a title', true); return; }
+  if (!title) { showToast('Please enter a title', true); return; }
   
   const entry = {
     id: editingId || Date.now(), 
@@ -438,17 +486,104 @@ function saveEntry(){
     added: editingId ? (mediaData.find(x=>x.id===editingId)?.added || Date.now()) : Date.now()
   };
   
-  if(editingId){ 
-    const i = mediaData.findIndex(x=>x.id===editingId); 
-    if(i>-1) mediaData[i] = entry; 
-  } else {
-    mediaData.push(entry);
-  }
+  const syncDot = document.getElementById('sync-dot');
+  const syncStatus = document.getElementById('sync-status');
+  syncDot.className = 'sync-dot syncing';
+  syncStatus.textContent = 'Saving...';
   
-  saveToStorage();
-  renderMedia(); 
-  closeModal(); 
-  showToast(editingId ? 'Manga updated!' : 'Manga added!');
+  try {
+    await saveToSheets(entry);
+    
+    if (editingId) { 
+      const i = mediaData.findIndex(x=>x.id===editingId); 
+      if (i > -1) mediaData[i] = entry; 
+    } else {
+      mediaData.push(entry);
+    }
+    saveToStorage();
+    
+    syncDot.className = 'sync-dot online';
+    syncStatus.textContent = 'Saved!';
+    renderMedia(); 
+    closeModal(); 
+    showToast(editingId ? 'Manga updated!' : 'Manga added!');
+    
+    setTimeout(() => {
+      if (syncStatus.textContent === 'Saved!') syncStatus.textContent = 'Ready';
+    }, 2000);
+    
+  } catch (err) { 
+    syncDot.className = 'sync-dot error';
+    syncStatus.textContent = 'Save failed';
+    showToast('Save failed: ' + err.message, true);
+  }
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Remove this manga?')) return;
+  
+  const syncDot = document.getElementById('sync-dot');
+  const syncStatus = document.getElementById('sync-status');
+  syncDot.className = 'sync-dot syncing';
+  syncStatus.textContent = 'Deleting...';
+  
+  try {
+    await deleteFromSheets(id);
+    mediaData = mediaData.filter(x => x.id !== id);
+    saveToStorage();
+    
+    syncDot.className = 'sync-dot online';
+    syncStatus.textContent = 'Deleted!';
+    renderMedia(); 
+    closeDetail(); 
+    showToast('Manga removed');
+    
+    setTimeout(() => {
+      if (syncStatus.textContent === 'Deleted!') syncStatus.textContent = 'Ready';
+    }, 2000);
+    
+  } catch (err) { 
+    syncDot.className = 'sync-dot error';
+    syncStatus.textContent = 'Delete failed';
+    showToast('Delete failed: ' + err.message, true);
+  }
+}
+
+async function updateChapterQuick(id) {
+  const input = document.getElementById('quick-chapter-input');
+  const newChapter = parseInt(input.value) || 0;
+  const manga = mediaData.find(x => x.id === id);
+  if (!manga) return;
+  
+  const updatedManga = { ...manga, currentChapter: newChapter };
+  const idx = mediaData.findIndex(x => x.id === id);
+  if (idx !== -1) mediaData[idx] = updatedManga;
+  
+  const syncDot = document.getElementById('sync-dot');
+  const syncStatus = document.getElementById('sync-status');
+  syncDot.className = 'sync-dot syncing';
+  syncStatus.textContent = 'Updating...';
+  
+  try {
+    await saveToSheets(updatedManga);
+    saveToStorage();
+    
+    syncDot.className = 'sync-dot online';
+    syncStatus.textContent = 'Updated!';
+    renderMedia(); 
+    showToast(`Chapter updated to ${newChapter}`);
+    closeDetail(); 
+    showDetail(id);
+    
+    setTimeout(() => {
+      if (syncStatus.textContent === 'Updated!') syncStatus.textContent = 'Ready';
+    }, 2000);
+    
+  } catch (err) { 
+    syncDot.className = 'sync-dot error';
+    syncStatus.textContent = 'Update failed';
+    showToast('Update failed: ' + err.message, true);
+  }
 }
 
 function getFiltered(){
@@ -630,21 +765,6 @@ function closeModal(){
 }
 function closeModalOutside(e){ if(e.target === document.getElementById('modal-overlay')) closeModal(); }
 
-function updateChapterQuick(id){
-  const input = document.getElementById('quick-chapter-input');
-  const newChapter = parseInt(input.value) || 0;
-  const manga = mediaData.find(x => x.id === id);
-  if(!manga) return;
-  const updatedManga = {...manga, currentChapter: newChapter};
-  const idx = mediaData.findIndex(x => x.id === id);
-  if(idx !== -1) mediaData[idx] = updatedManga;
-  saveToStorage();
-  renderMedia(); 
-  showToast(`Chapter updated to ${newChapter}`);
-  closeDetail(); 
-  showDetail(id);
-}
-
 function showDetail(id){
   const m = mediaData.find(x => x.id === id);
   if(!m) return;
@@ -673,15 +793,6 @@ function showDetail(id){
 function closeDetail(){ document.getElementById('detail-overlay').classList.remove('open'); }
 function closeDetailOutside(e){ if(e.target === document.getElementById('detail-overlay')) closeDetail(); }
 
-function deleteEntry(id){
-  if(!confirm('Remove this manga?')) return;
-  mediaData = mediaData.filter(x => x.id !== id);
-  saveToStorage();
-  renderMedia(); 
-  closeDetail(); 
-  showToast('Manga removed');
-}
-
 function toggleSidebar(){
   const aside = document.querySelector('aside');
   if(aside.style.display === 'block' || aside.style.display === 'flex') aside.style.display = 'none';
@@ -690,8 +801,8 @@ function toggleSidebar(){
 window.addEventListener('resize', () => { if(window.innerWidth > 900) document.querySelector('aside').style.display = 'block'; });
 document.addEventListener('click', e => { if(!e.target.closest('.tmdb-wrap')) document.getElementById('jikan-dd').style.display = 'none'; });
 
-// Mulai aplikasi
-loadFromStorage();
+// Load data saat halaman dimuat
+loadFromSheets();
 </script>
 </body>
 </html>
