@@ -234,17 +234,16 @@
 
 <script>
 // ==================== GOOGLE SHEETS API ====================
-// ⚠️ GANTI URL INI DENGAN URL APPS SCRIPT ANDA ⚠️
 const API_SHEETS = 'https://script.google.com/macros/s/AKfycbw7BjczrAVkCTdumUlXPZbWZLGpbs71O_FjqEkH5K_vCwaQKC1WAuoZ6GHdAG_dUD7M/exec';
 const ANILIST_API = 'https://graphql.anilist.co';
 
 let mediaData = [];
 let currentRating = 0;
 let editingId = null;
-let filterSt = 'all';
-let filterTy = 'all';
-let filterGenre = 'all';
-let viewMode = 'grid';
+let currentFilterStatus = 'all';
+let currentFilterType = 'all';
+let currentFilterGenre = 'all';
+let currentViewMode = 'grid';
 let anilistTimer = null;
 
 function setSyncStatus(status, msg) { 
@@ -408,9 +407,9 @@ async function saveEntry(){
 
 function getFiltered(){
   let data = [...mediaData];
-  if(filterSt !== 'all') data = data.filter(x => x.status === filterSt);
-  if(filterTy !== 'all') data = data.filter(x => x.type === filterTy);
-  if(filterGenre !== 'all') data = data.filter(x => x.genre && x.genre.toLowerCase().includes(filterGenre.toLowerCase()));
+  if(currentFilterStatus !== 'all') data = data.filter(x => x.status === currentFilterStatus);
+  if(currentFilterType !== 'all') data = data.filter(x => x.type === currentFilterType);
+  if(currentFilterGenre !== 'all') data = data.filter(x => x.genre && x.genre.toLowerCase().includes(currentFilterGenre.toLowerCase()));
   const q = document.getElementById('search-input').value.toLowerCase();
   if(q) data = data.filter(x => x.title.toLowerCase().includes(q) || (x.author && x.author.toLowerCase().includes(q)));
   const sort = document.getElementById('sort-select').value;
@@ -457,9 +456,9 @@ function renderMedia(){
   const data = getFiltered();
   const c = document.getElementById('media-container');
   if(!data.length){ c.innerHTML = '<div class="empty">📭 No manga found<br><small>Add your first manga using + button</small></div>'; return; }
-  c.innerHTML = viewMode === 'grid' ? `<div class="media-grid">${data.map(cardHTML).join('')}</div>` : `<div class="media-list">${data.map(listHTML).join('')}</div>`;
-  document.getElementById('btn-grid').className = 'view-btn' + (viewMode === 'grid' ? ' active' : '');
-  document.getElementById('btn-list').className = 'view-btn' + (viewMode === 'list' ? ' active' : '');
+  c.innerHTML = currentViewMode === 'grid' ? `<div class="media-grid">${data.map(cardHTML).join('')}</div>` : `<div class="media-list">${data.map(listHTML).join('')}</div>`;
+  document.getElementById('btn-grid').className = 'view-btn' + (currentViewMode === 'grid' ? ' active' : '');
+  document.getElementById('btn-list').className = 'view-btn' + (currentViewMode === 'list' ? ' active' : '');
 }
 
 function updateStats(){
@@ -481,29 +480,29 @@ function updateGenreCloud(){
   const genres = new Set();
   mediaData.forEach(m => { if(m.genre) m.genre.split(',').forEach(g => genres.add(g.trim())); });
   const cloud = document.getElementById('genre-cloud');
-  cloud.innerHTML = [...genres].sort().map(g => `<button class="genre-tag ${filterGenre === g ? 'active' : ''}" onclick="filterGenre('${g.replace(/'/g, "\\'")}')">${g}</button>`).join('');
+  cloud.innerHTML = [...genres].sort().map(g => `<button class="genre-tag ${currentFilterGenre === g ? 'active' : ''}" onclick="filterGenre('${g.replace(/'/g, "\\'")}')">${g}</button>`).join('');
 }
 
 function updateActiveFilters(){
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  document.getElementById('nav-' + filterSt)?.classList.add('active');
-  if(filterTy === 'all') document.getElementById('nav-type-all')?.classList.add('active');
-  else if(filterTy === 'Manga') document.getElementById('nav-type-manga')?.classList.add('active');
-  else if(filterTy === 'Manhwa') document.getElementById('nav-type-manhwa')?.classList.add('active');
-  else if(filterTy === 'Manhua') document.getElementById('nav-type-manhua')?.classList.add('active');
+  document.getElementById('nav-' + currentFilterStatus)?.classList.add('active');
+  if(currentFilterType === 'all') document.getElementById('nav-type-all')?.classList.add('active');
+  else if(currentFilterType === 'Manga') document.getElementById('nav-type-manga')?.classList.add('active');
+  else if(currentFilterType === 'Manhwa') document.getElementById('nav-type-manhwa')?.classList.add('active');
+  else if(currentFilterType === 'Manhua') document.getElementById('nav-type-manhua')?.classList.add('active');
   let titleText = 'My ';
-  if(filterSt !== 'all') titleText += `${filterSt === 'reading' ? '📖 Reading' : filterSt === 'completed' ? '✅ Completed' : filterSt === 'plan' ? '📋 Plan' : '⛔ Dropped'} `;
+  if(currentFilterStatus !== 'all') titleText += `${currentFilterStatus === 'reading' ? '📖 Reading' : currentFilterStatus === 'completed' ? '✅ Completed' : currentFilterStatus === 'plan' ? '📋 Plan' : '⛔ Dropped'} `;
   else titleText += 'All ';
-  if(filterTy !== 'all') titleText += `· ${filterTy} `;
-  if(filterGenre !== 'all') titleText += `· <span style="color:var(--gold)">${filterGenre}</span>`;
+  if(currentFilterType !== 'all') titleText += `· ${currentFilterType} `;
+  if(currentFilterGenre !== 'all') titleText += `· <span style="color:var(--gold)">${currentFilterGenre}</span>`;
   else titleText += '<em>Collection</em>';
   document.getElementById('section-title').innerHTML = titleText;
 }
 
-function filterStatus(s){ filterSt = s; renderMedia(); }
-function filterType(t){ filterTy = t; renderMedia(); }
-function filterGenre(g){ filterGenre = filterGenre === g ? 'all' : g; renderMedia(); }
-function setView(v){ viewMode = v; renderMedia(); }
+function filterStatus(s){ currentFilterStatus = s; renderMedia(); }
+function filterType(t){ currentFilterType = t; renderMedia(); }
+function filterGenre(g){ currentFilterGenre = currentFilterGenre === g ? 'all' : g; renderMedia(); }
+function setView(v){ currentViewMode = v; renderMedia(); }
 function setRating(v){ currentRating = v; document.querySelectorAll('.star-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.v) <= v)); }
 
 function openModal(id){
