@@ -128,7 +128,7 @@
 
 <div class="sync-bar">
   <span class="sync-dot" id="sync-dot"></span>
-  <span id="sync-status">Connecting...</span>
+  <span id="sync-status">Ready</span>
 </div>
 
 <header>
@@ -137,7 +137,6 @@
     <div class="tagline">track your manga & manhwa journey</div>
   </div>
   <div>
-    <button class="btn" onclick="loadFromSheets()">↻ Sync</button>
     <button class="btn btn-primary" onclick="openAddModal()">+ Add</button>
   </div>
 </header>
@@ -207,7 +206,7 @@
     <div class="modal-header"><div class="modal-title" id="modal-heading">Add Manga</div><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div style="margin-bottom:.8rem">
-        <label>Cari dari MyAnimeList</label>
+        <label>Cari dari MyAnimeList (Gratis, No API Key)</label>
         <div class="tmdb-wrap">
           <input class="tmdb-input" id="jikan-search" type="text" placeholder="Ketik judul manga/manhwa..." oninput="onJikanSearch(this.value)" autocomplete="off">
           <div class="tmdb-dropdown" id="jikan-dd"></div>
@@ -259,11 +258,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== GOOGLE SHEETS API ====================
-// ⚠️ GANTI URL INI DENGAN URL APPS SCRIPT KAMU ⚠️
-const API_SHEETS = 'https://script.google.com/macros/s/AKfycbw7BjczrAVkCTdumUlXPZbWZLGpbs71O_FjqEkH5K_vCwaQKC1WAuoZ6GHdAG_dUD7M/exec';
-
-// ==================== JIKAN API (MyAnimeList) ====================
+// ==================== JIKAN API (MyAnimeList) - GRATIS, NO API KEY ====================
 const JIKAN_API = 'https://api.jikan.moe/v4/manga?q=';
 
 let mediaData = [];
@@ -275,63 +270,31 @@ let currentFilterGenre = 'all';
 let currentViewMode = 'grid';
 let jikanTimer = null;
 
-// ==================== FUNGSI KONEK KE GOOGLE SHEETS ====================
-async function apiSheets(body) { 
-  try {
-    // Gunakan mode no-cors untuk menghindari masalah CORS
-    await fetch(API_SHEETS, { 
-      method: 'POST', 
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body) 
-    });
-    // Karena mode no-cors, kita tidak bisa membaca response
-    // Tapi kita asumsikan sukses
-    return { success: true };
-  } catch(e) {
-    console.error('Fetch error:', e);
-    throw e;
+// ==================== LOAD & SAVE ke LOCALSTORAGE ====================
+function loadFromStorage() {
+  const saved = localStorage.getItem('mangaTracker');
+  if (saved) {
+    mediaData = JSON.parse(saved);
+  } else {
+    // Data contoh
+    mediaData = [
+      { id: 1, title: "Solo Leveling", type: "Manhwa", year: 2018, status: "completed", genre: "Action, Fantasy", author: "Chugong", chapters: 179, currentChapter: 179, volumes: "14", rating: 5, notes: "Best manhwa ever!", cover: "", added: Date.now() - 86400000 },
+      { id: 2, title: "One Piece", type: "Manga", year: 1997, status: "reading", genre: "Action, Adventure, Fantasy", author: "Eiichiro Oda", chapters: 1088, currentChapter: 1050, volumes: "105", rating: 5, notes: "Peak fiction!", cover: "", added: Date.now() }
+    ];
   }
+  renderMedia();
 }
 
-async function loadFromSheets() {
-  setSyncStatus('syncing', 'Loading...');
-  try {
-    // Gunakan CORS proxy untuk GET request
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(API_SHEETS + '?action=getAll')}`;
-    const res = await fetch(proxyUrl);
-    const data = await res.json();
-    
-    if(data.error) throw new Error(data.error);
-    
-    mediaData = (data.manga || []).map(m => ({
-      id: Number(m.id), 
-      title: m.title || '', 
-      type: m.type || 'Manga', 
-      year: Number(m.year) || 0,
-      status: m.status || 'plan',
-      genre: m.genre || '', 
-      author: m.author || '', 
-      chapters: Number(m.chapters) || 0, 
-      currentChapter: Number(m.currentChapter) || 0,
-      volumes: m.volumes || '', 
-      rating: Number(m.rating) || 0, 
-      notes: m.notes || '', 
-      added: Number(m.added) || Date.now(),
-      cover: m.cover || '', 
-      malId: m.malId || ''
-    }));
-    
-    setSyncStatus('online', 'Synced');
-    renderMedia();
-  } catch(err) { 
-    console.error('Load error:', err);
-    setSyncStatus('error', 'Error'); 
-    showToast('Failed to load data', true);
-  }
+function saveToStorage() {
+  localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
+  document.getElementById('sync-status').textContent = 'Saved to Browser';
+  document.getElementById('sync-dot').className = 'sync-dot online';
+  setTimeout(() => {
+    document.getElementById('sync-status').textContent = 'Ready';
+  }, 2000);
 }
 
-// ==================== SEARCH DARI JIKAN API ====================
+// ==================== SEARCH DARI JIKAN API (GRATIS, NO API KEY) ====================
 async function searchJikan(query) {
   try {
     const response = await fetch(`${JIKAN_API}${encodeURIComponent(query)}&limit=8`);
@@ -446,13 +409,6 @@ function selectJikanManga(el) {
 }
 
 // ==================== FUNGSI UTAMA ====================
-function setSyncStatus(status, msg) { 
-  const dot = document.getElementById('sync-dot'); 
-  const text = document.getElementById('sync-status'); 
-  if(dot) dot.className = 'sync-dot ' + status; 
-  if(text) text.textContent = msg; 
-}
-
 function showToast(msg, isError) { 
   const t = document.getElementById('toast'); 
   t.textContent = msg; 
@@ -460,7 +416,7 @@ function showToast(msg, isError) {
   setTimeout(() => t.classList.remove('show'), 2000); 
 }
 
-async function saveEntry(){
+function saveEntry(){
   const title = document.getElementById('f-title').value.trim();
   if(!title){ showToast('Please enter a title', true); return; }
   
@@ -482,23 +438,17 @@ async function saveEntry(){
     added: editingId ? (mediaData.find(x=>x.id===editingId)?.added || Date.now()) : Date.now()
   };
   
-  setSyncStatus('syncing', 'Saving...');
-  try{
-    await apiSheets({ action: 'save', manga: entry });
-    if(editingId){ 
-      const i = mediaData.findIndex(x=>x.id===editingId); 
-      if(i>-1) mediaData[i] = entry; 
-    } else {
-      mediaData.push(entry);
-    }
-    renderMedia(); 
-    closeModal(); 
-    setSyncStatus('online', 'Saved!'); 
-    showToast(editingId ? 'Manga updated!' : 'Manga added!');
-  } catch(err){ 
-    showToast('Save failed: ' + err.message, true); 
-    setSyncStatus('error', 'Failed');
+  if(editingId){ 
+    const i = mediaData.findIndex(x=>x.id===editingId); 
+    if(i>-1) mediaData[i] = entry; 
+  } else {
+    mediaData.push(entry);
   }
+  
+  saveToStorage();
+  renderMedia(); 
+  closeModal(); 
+  showToast(editingId ? 'Manga updated!' : 'Manga added!');
 }
 
 function getFiltered(){
@@ -680,7 +630,7 @@ function closeModal(){
 }
 function closeModalOutside(e){ if(e.target === document.getElementById('modal-overlay')) closeModal(); }
 
-async function updateChapterQuick(id){
+function updateChapterQuick(id){
   const input = document.getElementById('quick-chapter-input');
   const newChapter = parseInt(input.value) || 0;
   const manga = mediaData.find(x => x.id === id);
@@ -688,17 +638,11 @@ async function updateChapterQuick(id){
   const updatedManga = {...manga, currentChapter: newChapter};
   const idx = mediaData.findIndex(x => x.id === id);
   if(idx !== -1) mediaData[idx] = updatedManga;
-  setSyncStatus('syncing', 'Updating...');
-  try{
-    await apiSheets({ action: 'save', manga: updatedManga });
-    renderMedia(); 
-    setSyncStatus('online', 'Updated'); 
-    showToast(`Chapter updated to ${newChapter}`);
-    closeDetail(); 
-    showDetail(id);
-  } catch(err){ 
-    showToast('Update failed', true); 
-  }
+  saveToStorage();
+  renderMedia(); 
+  showToast(`Chapter updated to ${newChapter}`);
+  closeDetail(); 
+  showDetail(id);
 }
 
 function showDetail(id){
@@ -729,19 +673,13 @@ function showDetail(id){
 function closeDetail(){ document.getElementById('detail-overlay').classList.remove('open'); }
 function closeDetailOutside(e){ if(e.target === document.getElementById('detail-overlay')) closeDetail(); }
 
-async function deleteEntry(id){
+function deleteEntry(id){
   if(!confirm('Remove this manga?')) return;
-  setSyncStatus('syncing', 'Deleting...');
-  try{
-    await apiSheets({ action: 'delete', id });
-    mediaData = mediaData.filter(x => x.id !== id);
-    renderMedia(); 
-    closeDetail(); 
-    setSyncStatus('online', 'Deleted'); 
-    showToast('Manga removed');
-  } catch(err){ 
-    showToast('Delete failed', true); 
-  }
+  mediaData = mediaData.filter(x => x.id !== id);
+  saveToStorage();
+  renderMedia(); 
+  closeDetail(); 
+  showToast('Manga removed');
 }
 
 function toggleSidebar(){
@@ -752,8 +690,8 @@ function toggleSidebar(){
 window.addEventListener('resize', () => { if(window.innerWidth > 900) document.querySelector('aside').style.display = 'block'; });
 document.addEventListener('click', e => { if(!e.target.closest('.tmdb-wrap')) document.getElementById('jikan-dd').style.display = 'none'; });
 
-// Load data saat halaman dimuat
-loadFromSheets();
+// Mulai aplikasi
+loadFromStorage();
 </script>
 </body>
 </html>
