@@ -152,6 +152,11 @@
   .toast.error{border-color:rgba(224,85,85,.5);color:var(--red)}
   ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}::-webkit-scrollbar-thumb:hover{background:var(--gold-dim)}
   
+  .chapter-input{width:100px;background:var(--surface2);border:1px solid var(--border);color:var(--gold);padding:.5rem;border-radius:6px;text-align:center}
+  .update-chapter-btn{padding:.5rem 1rem;background:var(--gold);color:#0A0A0C;border:none;border-radius:6px;cursor:pointer;font-size:.75rem}
+  .cover-buttons{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.3rem}
+  .cover-buttons .btn{padding:.35rem .8rem;font-size:.7rem}
+  
   @media(max-width:900px){main{grid-template-columns:1fr}aside{display:none}.stats-bar{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.form-group.full{grid-column:1}.add-layout{flex-direction:column}.search-wrap{min-width:200px}header{padding:0 1.25rem;height:70px}.logo{font-size:1.4rem;letter-spacing:.2em}.tagline{display:none}.logo-group{gap:.5rem}}
   @media(max-width:600px){.search-wrap{min-width:150px}.tagline{display:none}}
   .mob-filter-bar{display:none}.mob-fab{display:none}.drawer-overlay{display:none}.filter-drawer{display:none}
@@ -185,9 +190,6 @@
     .drawer-apply{display:block;width:calc(100% - 3rem);margin:1rem 1.5rem 1.5rem;padding:.8rem;background:var(--gold);color:#0A0A0C;border:none;border-radius:4px;font-family:var(--sans);font-size:.875rem;font-weight:500;cursor:pointer}
     .genre-drawer-cloud{display:flex;flex-wrap:wrap;gap:.4rem;max-height:130px;overflow-y:auto}
   }
-  
-  .chapter-input{width:100px;background:var(--surface2);border:1px solid var(--border);color:var(--gold);padding:.5rem;border-radius:6px;text-align:center}
-  .update-chapter-btn{padding:.5rem 1rem;background:var(--gold);color:#0A0A0C;border:none;border-radius:6px;cursor:pointer;font-size:.75rem}
 </style>
 </head>
 <body>
@@ -339,7 +341,7 @@
         <div style="flex:1;min-width:0">
           <div class="form-grid">
             <div class="form-group full">
-              <label>Title</label>
+              <label>Title *</label>
               <input type="text" id="f-title" placeholder="Enter title…">
             </div>
             <div class="form-group">
@@ -386,7 +388,16 @@
         </div>
         <div class="form-group">
           <label>URL / Link Baca</label>
-          <input type="url" id="f-url" placeholder="https://...">
+          <input type="url" id="f-url" placeholder="https://komikcast.com/...">
+        </div>
+        <div class="form-group">
+          <label>Cover Image</label>
+          <input type="url" id="f-cover" placeholder="URL cover (otomatis dari MAL)">
+          <div class="cover-buttons">
+            <button class="btn" type="button" onclick="searchGoogleCover()">🔍 Google Images</button>
+            <button class="btn" type="button" onclick="uploadCoverFile()">📤 Upload File</button>
+          </div>
+          <small style="font-size:.65rem;color:var(--text-dim)">Pilih salah satu: auto dari MAL, cari di Google, atau upload sendiri</small>
         </div>
         <div class="form-group">
           <label>Rating</label>
@@ -404,7 +415,6 @@
         </div>
       </div>
       
-      <input type="hidden" id="f-cover" value="">
       <input type="hidden" id="f-mal-id" value="">
 
       <div class="modal-footer">
@@ -435,9 +445,10 @@
 
 <script>
 // ==================== KONFIGURASI ====================
-// Gunakan Worker sebagai proxy (sudah handle CORS)
 const WORKER_URL = 'https://manga-proxy.ahmaddani287362.workers.dev';
 const JIKAN_API = 'https://api.jikan.moe/v4/manga?q=';
+// ⚠️ GANTI DENGAN API KEY IMGBB KAMU ⚠️
+const IMGBB_API_KEY = '89d9234558a47498b21ca8d0cefdb157';
 
 let mediaData = [];
 let currentRating = 0;
@@ -462,6 +473,51 @@ function escapeHtml(str) {
 
 function escapeString(s) {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// ==================== COVER FUNCTIONS ====================
+function searchGoogleCover() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) {
+    showToast('Isi judul dulu', true);
+    return;
+  }
+  window.open(`https://www.google.com/search?q=${encodeURIComponent(title + ' manga cover')}&tbm=isch`, '_blank');
+}
+
+async function uploadCoverFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    showToast('Uploading...', false);
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (data.success) {
+        const coverUrl = data.data.url;
+        document.getElementById('f-cover').value = coverUrl;
+        updatePosterPreview(coverUrl, document.getElementById('f-title').value);
+        showToast('Cover uploaded!');
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      showToast('Upload failed. Try Google Images instead.', true);
+      searchGoogleCover();
+    }
+  };
+  input.click();
 }
 
 // ==================== SYNC FUNCTIONS ====================
@@ -507,7 +563,6 @@ async function loadFromSheets() {
       url: String(m.url || '')
     }));
     
-    // Backup ke localStorage
     localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
     
     setSyncStatus('online', 'Synced');
@@ -517,7 +572,6 @@ async function loadFromSheets() {
     console.error('Load error:', err);
     setSyncStatus('error', 'Error');
     showToast('Failed to load. Using local data.', true);
-    // Fallback ke localStorage
     const saved = localStorage.getItem('mangaTracker');
     if (saved) {
       mediaData = JSON.parse(saved);
@@ -560,12 +614,11 @@ async function saveEntry() {
   setSyncStatus('syncing', 'Saving...');
   
   try {
-    const response = await fetch(WORKER_URL, {
+    await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'save', manga: entry })
     });
-    await response.json();
     
     if (editingId) {
       const idx = mediaData.findIndex(x => x.id === editingId);
@@ -949,7 +1002,6 @@ function showDetail(id) {
       ${m.rating ? `<div class="detail-rating-big">${m.rating}.0</div><div>${renderStars(m.rating)}<div style="font-size:.75rem;color:var(--text-dim);margin-top:.25rem">Your rating</div></div>` : '<div style="color:var(--text-dim)">Not yet rated</div>'}
     </div>
     
-    <!-- QUICK CHAPTER UPDATE -->
     <div style="background:var(--surface2);border-radius:8px;padding:1rem;margin-bottom:1.5rem">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
         <div>
