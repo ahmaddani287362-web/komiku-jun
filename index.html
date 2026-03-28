@@ -205,6 +205,8 @@
     <div class="tagline">a home to <em>track</em>, <em>rate</em>, and <em>remember</em> every manga & manhwa</div>
   </div>
   <div class="header-actions">
+    <button class="btn" onclick="exportData()">📤 Export</button>
+    <button class="btn" onclick="triggerImport()">📥 Import</button>
     <button class="btn" onclick="loadFromSheets()">↻ Sync</button>
     <button class="btn btn-primary header-add-btn" onclick="openModal()">+ Add Manga</button>
   </div>
@@ -447,8 +449,7 @@
 // ==================== KONFIGURASI ====================
 const WORKER_URL = 'https://manga-proxy.ahmaddani287362.workers.dev';
 const JIKAN_API = 'https://api.jikan.moe/v4/manga?q=';
-// ⚠️ GANTI DENGAN API KEY IMGBB KAMU ⚠️
-const IMGBB_API_KEY = '89d9234558a47498b21ca8d0cefdb157';
+const IMGBB_API_KEY = '89d9234558a47498b21ca8d0cefdb157'; // Ganti dengan API Key ImgBB kamu
 
 let mediaData = [];
 let currentRating = 0;
@@ -754,6 +755,139 @@ function clearMal() {
   document.getElementById('f-mal-id').value = '';
   document.getElementById('mal-dd').style.display = 'none';
   updatePosterPreview('', document.getElementById('f-title').value);
+}
+
+// ==================== EXPORT & IMPORT ====================
+function exportData() {
+  if (mediaData.length === 0) {
+    showToast('No data to export', true);
+    return;
+  }
+  
+  const exportObj = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    total: mediaData.length,
+    manga: mediaData
+  };
+  
+  const jsonStr = JSON.stringify(exportObj, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `manga-tracker-backup-${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast(`Exported ${mediaData.length} manga!`);
+}
+
+function triggerImport() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => importData(e.target.files[0]);
+  input.click();
+}
+
+async function importData(file) {
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      
+      let importedManga = [];
+      if (imported.manga && Array.isArray(imported.manga)) {
+        importedManga = imported.manga;
+      } else if (Array.isArray(imported)) {
+        importedManga = imported;
+      } else {
+        throw new Error('Invalid file format');
+      }
+      
+      if (importedManga.length === 0) {
+        showToast('No manga found in file', true);
+        return;
+      }
+      
+      const confirmMsg = `Import ${importedManga.length} manga?\n\n- Data dengan ID yang sama akan diupdate\n- Data baru akan ditambahkan\n\n⚠️ Data yang sudah ada TIDAK akan dihapus!`;
+      if (!confirm(confirmMsg)) return;
+      
+      const syncDot = document.getElementById('sync-dot');
+      const syncStatus = document.getElementById('sync-status');
+      syncDot.className = 'sync-dot syncing';
+      syncStatus.textContent = 'Importing...';
+      
+      let successCount = 0;
+      let updateCount = 0;
+      let failCount = 0;
+      
+      for (const manga of importedManga) {
+        try {
+          const existingIndex = mediaData.findIndex(m => m.id === manga.id);
+          
+          const entry = {
+            id: manga.id || Date.now() + Math.random(),
+            title: manga.title || 'Untitled',
+            type: manga.type || 'Manga',
+            year: manga.year || new Date().getFullYear(),
+            status: manga.status || 'plan',
+            genre: manga.genre || '',
+            author: manga.author || '',
+            chapters: manga.chapters || '',
+            currentChapter: manga.currentChapter || 0,
+            rating: manga.rating || 0,
+            notes: manga.notes || '',
+            cover: manga.cover || '',
+            malId: manga.malId || manga.tmdbid || '',
+            url: manga.url || '',
+            added: manga.added || Date.now()
+          };
+          
+          await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save', manga: entry })
+          });
+          
+          if (existingIndex !== -1) {
+            mediaData[existingIndex] = entry;
+            updateCount++;
+          } else {
+            mediaData.push(entry);
+            successCount++;
+          }
+          
+        } catch (err) {
+          console.error('Import error:', err);
+          failCount++;
+        }
+      }
+      
+      localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
+      renderMedia();
+      
+      syncDot.className = 'sync-dot online';
+      syncStatus.textContent = `Imported: ${successCount} new, ${updateCount} updated, ${failCount} failed`;
+      showToast(`Imported ${successCount + updateCount} manga (${updateCount} updated)`);
+      
+      setTimeout(() => {
+        if (syncStatus.textContent.includes('Imported')) {
+          syncStatus.textContent = 'Ready';
+        }
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast('Import failed: Invalid file format', true);
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ==================== FUNGSI UTAMA ====================
