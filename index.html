@@ -558,7 +558,7 @@ async function loadFromSheets() {
       currentChapter: Number(m.currentChapter || m.currentchapter || 0),
       rating: Number(m.rating || 0),
       notes: String(m.notes || ''),
-      added: Number(m.added || 0),
+      added: Number(m.added) || Date.now(),
       cover: String(m.cover || ''),
       malId: String(m.malId || ''),
       url: String(m.url || '')
@@ -590,8 +590,10 @@ async function saveEntry() {
     return;
   }
   
+  const now = Date.now();
+  
   const entry = {
-    id: editingId || Date.now(),
+    id: editingId || now,
     title: title,
     type: document.getElementById('f-type').value,
     year: parseInt(document.getElementById('f-year').value) || new Date().getFullYear(),
@@ -605,7 +607,7 @@ async function saveEntry() {
     cover: document.getElementById('f-cover').value || '',
     malId: document.getElementById('f-mal-id').value || '',
     url: document.getElementById('f-url').value || '',
-    added: editingId ? (mediaData.find(x => x.id === editingId)?.added || Date.now()) : Date.now()
+    added: editingId ? (mediaData.find(x => x.id === editingId)?.added || now) : now
   };
   
   isSaving = true;
@@ -826,13 +828,14 @@ async function importData(file) {
       let successCount = 0;
       let updateCount = 0;
       let failCount = 0;
+      const now = Date.now();
       
       for (const manga of importedManga) {
         try {
           const existingIndex = mediaData.findIndex(m => m.id === manga.id);
           
           const entry = {
-            id: manga.id || Date.now() + Math.random(),
+            id: manga.id || now + Math.random(),
             title: manga.title || 'Untitled',
             type: manga.type || 'Manga',
             year: manga.year || new Date().getFullYear(),
@@ -846,7 +849,7 @@ async function importData(file) {
             cover: manga.cover || '',
             malId: manga.malId || manga.tmdbid || '',
             url: manga.url || '',
-            added: manga.added || Date.now()
+            added: manga.added || now
           };
           
           await fetch(WORKER_URL, {
@@ -907,10 +910,20 @@ function getFiltered() {
     );
   }
   const sort = document.getElementById('sort-select').value;
-  if (sort === 'rating') data.sort((a, b) => b.rating - a.rating);
-  else if (sort === 'title') data.sort((a, b) => a.title.localeCompare(b.title));
-  else if (sort === 'year') data.sort((a, b) => b.year - a.year);
-  else data.sort((a, b) => b.added - a.added);
+  if (sort === 'rating') {
+    data.sort((a, b) => b.rating - a.rating);
+  } else if (sort === 'title') {
+    data.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (sort === 'year') {
+    data.sort((a, b) => b.year - a.year);
+  } else {
+    // Recently Added - urutkan dari yang terbaru
+    data.sort((a, b) => {
+      const aTime = typeof a.added === 'number' ? a.added : 0;
+      const bTime = typeof b.added === 'number' ? b.added : 0;
+      return bTime - aTime;
+    });
+  }
   return data;
 }
 
