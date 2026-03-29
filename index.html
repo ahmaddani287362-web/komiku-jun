@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Manga Track — Comic & Manga Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{--gold:#C9A84C;--gold-light:#E8C97A;--gold-dim:#8B6E30;--bg:#0A0A0C;--surface:#111116;--surface2:#18181F;--surface3:#1F1F28;--border:#2A2A35;--border-soft:#222230;--text:#F0EEE8;--text-muted:#8A8899;--text-dim:#55546A;--red:#E05555;--green:#5EC47A;--blue:#5B8DEF;--purple:#9B6BF0;--pink:#E86F9C;--orange:#E8A75C;--serif:'Cormorant Garamond',serif;--sans:'DM Sans',sans-serif}
@@ -389,6 +389,10 @@
           <input type="number" id="f-current-chapter" placeholder="Chapter ke-?" min="0">
         </div>
         <div class="form-group">
+          <label>Volumes</label>
+          <input type="text" id="f-volumes" placeholder="Optional">
+        </div>
+        <div class="form-group">
           <label>URL / Link Baca</label>
           <input type="url" id="f-url" placeholder="https://komikcast.com/...">
         </div>
@@ -449,7 +453,7 @@
 // ==================== KONFIGURASI ====================
 const WORKER_URL = 'https://manga-proxy.ahmaddani287362.workers.dev';
 const JIKAN_API = 'https://api.jikan.moe/v4/manga?q=';
-const IMGBB_API_KEY = '89d9234558a47498b21ca8d0cefdb157'; // Ganti dengan API Key ImgBB kamu
+const IMGBB_API_KEY = '89d9234558a47498b21ca8d0cefdb157';
 
 let mediaData = [];
 let currentRating = 0;
@@ -461,7 +465,7 @@ let viewMode = 'grid';
 let isSaving = false;
 let malTimer = null;
 
-// ==================== ESCAPE HTML ====================
+// ==================== HELPER FUNCTIONS ====================
 function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/[&<>]/g, function(m) {
@@ -474,6 +478,13 @@ function escapeHtml(str) {
 
 function escapeString(s) {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function formatDate(timestamp) {
+  if (!timestamp || timestamp === '' || timestamp === 0) return 'Belum pernah';
+  const date = new Date(Number(timestamp));
+  if (isNaN(date.getTime())) return 'Tanggal tidak valid';
+  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 // ==================== COVER FUNCTIONS ====================
@@ -555,13 +566,16 @@ async function loadFromSheets() {
       genre: String(m.genre || ''),
       author: String(m.author || ''),
       chapters: String(m.chapters || ''),
-      currentChapter: Number(m.currentChapter || m.currentchapter || 0),
+      currentChapter: Number(m.currentChapter || 0),
+      volumes: String(m.volumes || ''),
       rating: Number(m.rating || 0),
       notes: String(m.notes || ''),
       added: Number(m.added) || Date.now(),
       cover: String(m.cover || ''),
       malId: String(m.malId || ''),
-      url: String(m.url || '')
+      url: String(m.url || ''),
+      lastRead: m.lastRead ? Number(m.lastRead) : '',
+      lastEdited: m.lastEdited ? Number(m.lastEdited) : ''
     }));
     
     localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
@@ -602,12 +616,15 @@ async function saveEntry() {
     author: document.getElementById('f-author').value || '',
     chapters: document.getElementById('f-chapters').value || '',
     currentChapter: parseInt(document.getElementById('f-current-chapter').value) || 0,
+    volumes: document.getElementById('f-volumes').value || '',
     rating: currentRating || 0,
     notes: document.getElementById('f-notes').value || '',
     cover: document.getElementById('f-cover').value || '',
     malId: document.getElementById('f-mal-id').value || '',
     url: document.getElementById('f-url').value || '',
-    added: editingId ? (mediaData.find(x => x.id === editingId)?.added || now) : now
+    added: editingId ? (mediaData.find(x => x.id === editingId)?.added || now) : now,
+    lastRead: editingId ? (mediaData.find(x => x.id === editingId)?.lastRead || '') : '',
+    lastEdited: now
   };
   
   isSaving = true;
@@ -833,6 +850,7 @@ async function importData(file) {
       for (const manga of importedManga) {
         try {
           const existingIndex = mediaData.findIndex(m => m.id === manga.id);
+          const existing = existingIndex !== -1 ? mediaData[existingIndex] : null;
           
           const entry = {
             id: manga.id || now + Math.random(),
@@ -844,12 +862,15 @@ async function importData(file) {
             author: manga.author || '',
             chapters: manga.chapters || '',
             currentChapter: manga.currentChapter || 0,
+            volumes: manga.volumes || '',
             rating: manga.rating || 0,
             notes: manga.notes || '',
             cover: manga.cover || '',
             malId: manga.malId || manga.tmdbid || '',
             url: manga.url || '',
-            added: manga.added || now
+            added: manga.added || now,
+            lastRead: manga.lastRead || (existing ? existing.lastRead : ''),
+            lastEdited: now
           };
           
           await fetch(WORKER_URL, {
@@ -893,6 +914,43 @@ async function importData(file) {
   reader.readAsText(file);
 }
 
+// ==================== UPDATE CHAPTER ====================
+async function updateChapterDirect(id) {
+  const input = document.getElementById('quick-chapter-input');
+  const newChapter = parseInt(input.value) || 0;
+  const manga = mediaData.find(x => x.id === id);
+  if (!manga) return;
+  
+  const now = Date.now();
+  const updatedManga = { 
+    ...manga, 
+    currentChapter: newChapter,
+    lastRead: now,
+    lastEdited: now
+  };
+  
+  const idx = mediaData.findIndex(x => x.id === id);
+  if (idx !== -1) mediaData[idx] = updatedManga;
+  
+  setSyncStatus('syncing', 'Updating...');
+  try {
+    await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'save', manga: updatedManga })
+    });
+    localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
+    renderMedia();
+    setSyncStatus('online', 'Updated');
+    showToast(`Chapter updated to ${newChapter}`);
+    closeDetail();
+    showDetail(id);
+  } catch (err) {
+    showToast('Update failed', true);
+    setSyncStatus('error', 'Failed');
+  }
+}
+
 // ==================== FUNGSI UTAMA ====================
 function getFiltered() {
   let data = [...mediaData];
@@ -917,7 +975,6 @@ function getFiltered() {
   } else if (sort === 'year') {
     data.sort((a, b) => b.year - a.year);
   } else {
-    // Recently Added - urutkan dari yang terbaru
     data.sort((a, b) => {
       const aTime = typeof a.added === 'number' ? a.added : 0;
       const bTime = typeof b.added === 'number' ? b.added : 0;
@@ -1083,6 +1140,7 @@ function openModal(id) {
   document.getElementById('f-author').value = m ? m.author : '';
   document.getElementById('f-chapters').value = m ? m.chapters : '';
   document.getElementById('f-current-chapter').value = m ? (m.currentChapter || '') : '';
+  document.getElementById('f-volumes').value = m ? (m.volumes || '') : '';
   document.getElementById('f-url').value = m ? (m.url || '') : '';
   document.getElementById('f-notes').value = m ? m.notes : '';
   document.getElementById('f-cover').value = m ? (m.cover || '') : '';
@@ -1101,35 +1159,6 @@ function closeModal() {
 }
 function closeModalOutside(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
 
-async function updateChapterDirect(id) {
-  const input = document.getElementById('quick-chapter-input');
-  const newChapter = parseInt(input.value) || 0;
-  const manga = mediaData.find(x => x.id === id);
-  if (!manga) return;
-  
-  const updatedManga = { ...manga, currentChapter: newChapter };
-  const idx = mediaData.findIndex(x => x.id === id);
-  if (idx !== -1) mediaData[idx] = updatedManga;
-  
-  setSyncStatus('syncing', 'Updating...');
-  try {
-    await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'save', manga: updatedManga })
-    });
-    localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
-    renderMedia();
-    setSyncStatus('online', 'Updated');
-    showToast(`Chapter updated to ${newChapter}`);
-    closeDetail();
-    showDetail(id);
-  } catch (err) {
-    showToast('Update failed', true);
-    setSyncStatus('error', 'Failed');
-  }
-}
-
 function showDetail(id) {
   const m = mediaData.find(x => x.id === id);
   if (!m) return;
@@ -1140,8 +1169,15 @@ function showDetail(id) {
   const totalChapters = parseInt(m.chapters) || 0;
   const progress = totalChapters > 0 ? Math.round((m.currentChapter / totalChapters) * 100) : 0;
   
-  document.getElementById('d-title').innerHTML = `${typeIcon} ${escapeHtml(m.title)}`;
-  document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} · ${m.genre || 'No genre'} · ${m.author ? '✍️ ' + escapeHtml(m.author) : ''}`;
+  const safeTitle = escapeHtml(m.title);
+  const safeAuthor = escapeHtml(m.author);
+  const safeGenre = escapeHtml(m.genre);
+  const safeNotes = escapeHtml(m.notes);
+  const safeUrl = escapeHtml(m.url);
+  const safeStatus = escapeHtml(statusLabels[m.status] || m.status);
+  
+  document.getElementById('d-title').innerHTML = `${typeIcon} ${safeTitle}`;
+  document.getElementById('d-meta').innerHTML = `${m.type} · ${m.year || '—'} · ${m.genre ? safeGenre : 'No genre'} · ${m.author ? '✍️ ' + safeAuthor : ''}`;
   document.getElementById('d-poster').innerHTML = m.cover && m.cover.trim() !== '' ? `<img class="detail-poster" src="${m.cover}" onerror="this.outerHTML='<div class=detail-poster-ph>${letter}</div>'">` : `<div class="detail-poster-ph">${letter}</div>`;
   
   document.getElementById('detail-body').innerHTML = `
@@ -1165,15 +1201,17 @@ function showDetail(id) {
     </div>
     
     <div style="margin-bottom:1rem">
-      <div class="detail-row"><span class="detail-key">Status</span><span class="card-badge ${statusClasses[m.status]}" style="position:static">${statusLabels[m.status]}</span></div>
-      ${m.author ? `<div class="detail-row"><span class="detail-key">Author / Artist</span><span class="detail-val">${escapeHtml(m.author)}</span></div>` : ''}
-      ${m.genre ? `<div class="detail-row"><span class="detail-key">Genres</span><span class="detail-val">${escapeHtml(m.genre)}</span></div>` : ''}
+      <div class="detail-row"><span class="detail-key">Status</span><span class="card-badge ${statusClasses[m.status]}" style="position:static">${safeStatus}</span></div>
+      ${m.author ? `<div class="detail-row"><span class="detail-key">Author / Artist</span><span class="detail-val">${safeAuthor}</span></div>` : ''}
+      ${m.genre ? `<div class="detail-row"><span class="detail-key">Genres</span><span class="detail-val">${safeGenre}</span></div>` : ''}
       ${m.chapters ? `<div class="detail-row"><span class="detail-key">Total Chapters</span><span class="detail-val">${m.chapters}</span></div>` : ''}
       ${m.currentChapter ? `<div class="detail-row"><span class="detail-key">Current Chapter</span><span class="detail-val" style="color:var(--gold)">Chapter ${m.currentChapter}</span></div>` : ''}
-      ${m.url ? `<div class="detail-row"><span class="detail-key">Link Baca</span><span class="detail-val"><a href="${m.url}" target="_blank" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
+      ${m.url ? `<div class="detail-row"><span class="detail-key">Link Baca</span><span class="detail-val"><a href="${safeUrl}" target="_blank" style="color:var(--gold);text-decoration:none">📖 Read Online →</a></span></div>` : ''}
+      ${m.lastRead ? `<div class="detail-row"><span class="detail-key">Terakhir Baca</span><span class="detail-val">${formatDate(m.lastRead)}</span></div>` : ''}
+      ${m.lastEdited ? `<div class="detail-row"><span class="detail-key">Terakhir Edit</span><span class="detail-val">${formatDate(m.lastEdited)}</span></div>` : ''}
     </div>
     
-    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold-dim);padding:.75rem 1rem;font-size:.875rem;color:var(--text-muted);line-height:1.6;margin-bottom:1rem"><em>"${escapeHtml(m.notes)}"</em></div>` : ''}
+    ${m.notes ? `<div style="background:var(--surface2);border-left:2px solid var(--gold-dim);padding:.75rem 1rem;font-size:.875rem;color:var(--text-muted);line-height:1.6;margin-bottom:1rem"><em>"${safeNotes}"</em></div>` : ''}
     
     <div style="display:flex;gap:.75rem;padding-top:.5rem">
       <button class="btn btn-primary" onclick="closeDetail(); openModal(${m.id})">✏️ Edit</button>
