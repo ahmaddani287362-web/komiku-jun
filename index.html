@@ -678,53 +678,69 @@
         const statusClasses = { reading: 'badge-reading', completed: 'badge-completed', plan: 'badge-plan', dropped: 'badge-dropped' };
 
         function renderMedia() {
-            updateStats();
-            updateGenreCloud();
-            updateActiveFilters();
+        updateStats();
+        updateGenreCloud();
+        updateActiveFilters();
+
+        const data = getFiltered();
+        const container = document.getElementById('media-container');
+
+        if (!data.length) {
+            container.innerHTML = '<div class="col-span-full text-center py-16 text-zinc-500"><i class="fa-regular fa-folder-open text-4xl mb-3 block"></i>No manga found<br>Click + Add Manga</div>';
+            return;
+        }
+
+        // --- Kode Baru untuk Rating Badge (dengan conditional rendering) ---
+        container.innerHTML = data.map(m => {
+            const totalCh = parseInt(m.chapters) || 0;
+            const progress = totalCh > 0 ? Math.round((m.currentChapter / totalCh) * 100) : 0;
+            const chapterText = formatChapter(m.currentChapter, m.chapters);
+            const typeIcon = getTypeIcon(m.type);
             
-            const data = getFiltered();
-            const container = document.getElementById('media-container');
-            
-            if (!data.length) {
-                container.innerHTML = '<div class="col-span-full text-center py-16 text-zinc-500"><i class="fa-regular fa-folder-open text-4xl mb-3 block"></i>No manga found<br>Click + Add Manga</div>';
-                return;
-            }
-            
-            container.innerHTML = data.map(m => {
-                const totalCh = parseInt(m.chapters) || 0;
-                const progress = totalCh > 0 ? Math.round((m.currentChapter / totalCh) * 100) : 0;
-                const chapterText = formatChapter(m.currentChapter, m.chapters);
-                const typeIcon = getTypeIcon(m.type);
-                
-                return `
-                    <div class="media-card glass-card rounded-xl overflow-hidden cursor-pointer group relative transition-all duration-200" onclick="showDetail(${m.id})">
-                        <div class="relative overflow-hidden">
-                            <img src="${m.cover || 'https://placehold.co/300x450/1e1e24/52525b?text=No+Cover'}" class="card-img" onerror="this.src='https://placehold.co/300x450/1e1e24/52525b?text=No+Cover'">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
-                                <div class="flex gap-2">
-                                    <button class="bg-amber-600 text-xs px-2 py-1 rounded-md" onclick="event.stopPropagation(); openEditModal(${m.id})"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
-                                    <button class="bg-sky-600 text-xs px-2 py-1 rounded-md" onclick="event.stopPropagation(); quickAddChapter(${m.id})"><i class="fa-solid fa-plus"></i> +1</button>
-                                </div>
-                            </div>
+            // Format rating untuk ditampilkan (1 desimal)
+            const displayRating = m.rating ? m.rating.toFixed(1) : null;
+
+            return `
+                <div class="media-card glass-card rounded-xl overflow-hidden cursor-pointer group relative transition-all duration-200" onclick="showDetail(${m.id})">
+                    <div class="relative overflow-hidden">
+                        <img src="${m.cover || 'https://placehold.co/300x450/1e1e24/52525b?text=No+Cover'}" class="card-img" onerror="this.src='https://placehold.co/300x450/1e1e24/52525b?text=No+Cover'">
+                        
+                        <!-- PREMIUM RATING BADGE - HANYA MUNCUL JIKA ADA RATING -->
+                        ${displayRating ? `
+                        <div class="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 shadow-md group-hover:scale-105 transition-transform duration-200">
+                            <i class="fa-solid fa-star text-amber-400 text-[11px] drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]"></i>
+                            <span class="text-[11px] font-bold font-mono text-white leading-none">${displayRating}</span>
                         </div>
-                        <div class="p-3">
-                            <div class="font-semibold text-sm line-clamp-1">${escapeHtml(m.title)}</div>
-                            <div class="text-xs text-zinc-400 mt-1">${typeIcon} ${m.type} · ${m.year || '?'}</div>
-                            ${chapterText ? `<div class="text-xs text-amber-400 mt-1">📖 ${chapterText}</div>` : ''}
-                            <div class="mt-2">
-                                <div class="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
-                                    <div class="h-full bg-amber-500 rounded-full" style="width: ${progress}%"></div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between mt-1">
-                                <span class="text-[11px] text-zinc-500">${progress}%</span>
-                                <span class="text-[11px] text-amber-400">${m.rating ? m.rating : '0'}/10</span>
+                        ` : ''}
+                        
+                        <!-- HOVER OVERLAY (Edit, +1) -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
+                            <div class="flex gap-2">
+                                <button class="bg-amber-600 text-xs px-2 py-1 rounded-md" onclick="event.stopPropagation(); openEditModal(${m.id})"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+                                <button class="bg-sky-600 text-xs px-2 py-1 rounded-md" onclick="event.stopPropagation(); quickAddChapter(${m.id})"><i class="fa-solid fa-plus"></i> +1</button>
                             </div>
                         </div>
                     </div>
-                `;
-            }).join('');
-        }
+                    
+                    <div class="p-3">
+                        <div class="font-semibold text-sm line-clamp-1">${escapeHtml(m.title)}</div>
+                        <div class="text-xs text-zinc-400 mt-1">${typeIcon} ${m.type} · ${m.year || '?'}</div>
+                        ${chapterText ? `<div class="text-xs text-amber-400 mt-1">📖 ${chapterText}</div>` : ''}
+                        <div class="mt-2">
+                            <div class="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-amber-500 rounded-full" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-1">
+                            <span class="text-[11px] text-zinc-500">${progress}%</span>
+                            <!-- Rating numerik kecil di bawah (opsional, bisa dihapus jika badge sudah cukup) -->
+                            ${displayRating ? `<span class="text-[10px] text-amber-500/70">${displayRating}/10</span>` : '<span class="text-[10px] text-zinc-600">Not rated</span>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 
         function updateStats() {
             document.getElementById('stat-total').innerText = mediaData.length;
