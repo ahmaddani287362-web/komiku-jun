@@ -37,6 +37,20 @@
         .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.25rem; }
         .search-input:focus { box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.3); }
         .chip-status.active { background-color: rgba(201, 168, 76, 0.2); color: #fbbf24; border: 1px solid rgba(201, 168, 76, 0.3); }
+        /* Rating stars 1-10 */
+        .rating-stars { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+        .rating-star { font-size: 1.25rem; cursor: pointer; color: #3f3f46; transition: all 0.1s ease; }
+        .rating-star:hover, .rating-star.active { color: #fbbf24; text-shadow: 0 0 4px rgba(251, 191, 36, 0.4); }
+        /* Stats grid mobile fix */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 1rem; } }
+        /* Search result with image */
+        .search-result-item { display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #3f3f46; transition: background 0.2s; }
+        .search-result-item:hover { background: #3f3f46; }
+        .search-result-img { width: 40px; height: 60px; object-fit: cover; border-radius: 6px; background: #27272a; }
+        .search-result-info { flex: 1; }
+        .search-result-title { font-weight: 500; font-size: 0.875rem; }
+        .search-result-sub { font-size: 0.7rem; color: #a1a1aa; margin-top: 0.25rem; }
     </style>
 </head>
 <body class="dark text-white font-sans antialiased">
@@ -58,23 +72,24 @@
         </div>
     </nav>
 
+    <!-- Stats Grid - 2x2 on mobile, 4x1 on desktop -->
     <div class="max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="glass-card rounded-2xl p-5 cursor-pointer" onclick="applyFilter('all')">
-                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-sm uppercase tracking-wide">Total</p><p class="text-3xl font-bold mt-1" id="stat-total">0</p></div><i class="fa-solid fa-layer-group text-amber-500 text-xl"></i></div>
-                <div class="mt-2 text-xs text-zinc-500">Manga & Manhwa</div>
+        <div class="stats-grid">
+            <div class="glass-card rounded-2xl p-4 cursor-pointer" onclick="applyFilter('all')">
+                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-xs uppercase tracking-wide">Total</p><p class="text-2xl md:text-3xl font-bold mt-1" id="stat-total">0</p></div><i class="fa-solid fa-layer-group text-amber-500 text-xl"></i></div>
+                <div class="mt-1 text-xs text-zinc-500">Manga & Manhwa</div>
             </div>
-            <div class="glass-card rounded-2xl p-5 cursor-pointer" onclick="applyFilter('reading')">
-                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-sm uppercase tracking-wide">Reading</p><p class="text-3xl font-bold mt-1" id="stat-reading">0</p></div><i class="fa-solid fa-eye text-sky-500 text-xl"></i></div>
-                <div class="mt-2 text-xs text-zinc-500">Currently active</div>
+            <div class="glass-card rounded-2xl p-4 cursor-pointer" onclick="applyFilter('reading')">
+                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-xs uppercase tracking-wide">Reading</p><p class="text-2xl md:text-3xl font-bold mt-1" id="stat-reading">0</p></div><i class="fa-solid fa-eye text-sky-500 text-xl"></i></div>
+                <div class="mt-1 text-xs text-zinc-500">Currently active</div>
             </div>
-            <div class="glass-card rounded-2xl p-5 cursor-pointer" onclick="applyFilter('completed')">
-                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-sm uppercase tracking-wide">Completed</p><p class="text-3xl font-bold mt-1" id="stat-completed">0</p></div><i class="fa-solid fa-circle-check text-emerald-500 text-xl"></i></div>
-                <div class="mt-2 text-xs text-zinc-500">Finished series</div>
+            <div class="glass-card rounded-2xl p-4 cursor-pointer" onclick="applyFilter('completed')">
+                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-xs uppercase tracking-wide">Completed</p><p class="text-2xl md:text-3xl font-bold mt-1" id="stat-completed">0</p></div><i class="fa-solid fa-circle-check text-emerald-500 text-xl"></i></div>
+                <div class="mt-1 text-xs text-zinc-500">Finished series</div>
             </div>
-            <div class="glass-card rounded-2xl p-5 cursor-pointer" onclick="applyFilter('plan')">
-                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-sm uppercase tracking-wide">Plan to Read</p><p class="text-3xl font-bold mt-1" id="stat-plan">0</p></div><i class="fa-solid fa-calendar-week text-purple-500 text-xl"></i></div>
-                <div class="mt-2 text-xs text-zinc-500">Watchlist</div>
+            <div class="glass-card rounded-2xl p-4 cursor-pointer" onclick="applyFilter('plan')">
+                <div class="flex justify-between items-start"><div><p class="text-zinc-400 text-xs uppercase tracking-wide">Plan to Read</p><p class="text-2xl md:text-3xl font-bold mt-1" id="stat-plan">0</p></div><i class="fa-solid fa-calendar-week text-purple-500 text-xl"></i></div>
+                <div class="mt-1 text-xs text-zinc-500">Watchlist</div>
             </div>
         </div>
 
@@ -112,7 +127,13 @@
                 <button onclick="closeModal()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-6 space-y-5">
-                <div><label class="text-xs uppercase text-zinc-500 font-semibold block mb-1">Search from MyAnimeList</label><div class="relative"><input type="text" id="mal-search" placeholder="Type title..." oninput="onMalSearch(this.value)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm"><div id="mal-dd" class="absolute left-0 right-0 top-full mt-1 bg-zinc-800 rounded-xl border border-zinc-700 max-h-60 overflow-auto z-50 hidden"></div></div></div>
+                <div>
+                    <label class="text-xs uppercase text-zinc-500 font-semibold block mb-1">Search from MyAnimeList</label>
+                    <div class="relative">
+                        <input type="text" id="mal-search" placeholder="Type title..." oninput="onMalSearch(this.value)" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm">
+                        <div id="mal-dd" class="absolute left-0 right-0 top-full mt-1 bg-zinc-800 rounded-xl border border-zinc-700 max-h-80 overflow-auto z-50 hidden"></div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label class="text-xs uppercase text-zinc-500">Title *</label><input type="text" id="f-title" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm"></div>
                     <div><label class="text-xs uppercase text-zinc-500">Type</label><select id="f-type" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm"><option>Manga</option><option>Manhwa</option><option>Manhua</option></select></div>
@@ -124,7 +145,7 @@
                     <div><label class="text-xs uppercase text-zinc-500">Current Chapter</label><input type="number" id="f-current-chapter" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm"></div>
                     <div><label class="text-xs uppercase text-zinc-500">URL / Link Baca</label><input type="url" id="f-url" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm"></div>
                     <div><label class="text-xs uppercase text-zinc-500">Cover URL</label><input type="url" id="f-cover" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm"><div class="flex gap-2 mt-2"><button onclick="searchGoogleCover()" class="text-xs bg-zinc-700 px-3 py-1 rounded-lg">🔍 Google Images</button><button onclick="uploadCoverFile()" class="text-xs bg-zinc-700 px-3 py-1 rounded-lg">📤 Upload</button></div></div>
-                    <div class="md:col-span-2"><label class="text-xs uppercase text-zinc-500">Rating</label><div id="star-rating" class="flex gap-1 text-2xl"><span class="star-btn cursor-pointer" data-v="1">★</span><span class="star-btn cursor-pointer" data-v="2">★</span><span class="star-btn cursor-pointer" data-v="3">★</span><span class="star-btn cursor-pointer" data-v="4">★</span><span class="star-btn cursor-pointer" data-v="5">★</span></div></div>
+                    <div class="md:col-span-2"><label class="text-xs uppercase text-zinc-500">Rating (1-10)</label><div id="star-rating" class="rating-stars"></div></div>
                     <div class="md:col-span-2"><label class="text-xs uppercase text-zinc-500">Notes</label><textarea id="f-notes" rows="2" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm"></textarea></div>
                 </div>
                 <input type="hidden" id="f-mal-id">
@@ -189,6 +210,35 @@
             t.innerHTML = msg;
             t.classList.add('opacity-100', 'translate-y-0');
             setTimeout(() => t.classList.remove('opacity-100', 'translate-y-0'), 2500);
+        }
+
+        // ==================== RATING STARS 1-10 ====================
+        function createRatingStars() {
+            const container = document.getElementById('star-rating');
+            if (!container) return;
+            let starsHtml = '';
+            for (let i = 1; i <= 10; i++) {
+                starsHtml += `<span class="rating-star" data-value="${i}" onclick="setRating(${i})">★</span>`;
+            }
+            container.innerHTML = starsHtml;
+        }
+
+        function setRating(v) {
+            currentRating = v;
+            document.querySelectorAll('.rating-star').forEach((star, idx) => {
+                if (idx < v) star.classList.add('active');
+                else star.classList.remove('active');
+            });
+        }
+
+        function updateRatingDisplay(rating) {
+            const container = document.getElementById('star-rating');
+            if (!container) return;
+            const stars = container.querySelectorAll('.rating-star');
+            stars.forEach((star, idx) => {
+                if (idx < rating) star.classList.add('active');
+                else star.classList.remove('active');
+            });
         }
 
         // ==================== SYNC FUNCTIONS ====================
@@ -308,7 +358,7 @@
             }
         }
 
-        // ==================== SEARCH JIKAN ====================
+        // ==================== SEARCH JIKAN WITH IMAGES ====================
         async function searchMal(query) {
             try {
                 const url = `${JIKAN_API}${encodeURIComponent(query)}&limit=6`;
@@ -339,18 +389,18 @@
             }
             
             const dd = document.getElementById('mal-dd');
-            dd.innerHTML = '<div class="p-3 text-center text-zinc-400">Searching...</div>';
+            dd.innerHTML = '<div class="p-3 text-center text-zinc-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Searching...</div>';
             dd.style.display = 'block';
             
             malTimer = setTimeout(async () => {
                 const results = await searchMal(value);
                 if (!results.length) {
-                    dd.innerHTML = '<div class="p-3 text-center text-zinc-400">No results</div>';
+                    dd.innerHTML = '<div class="p-3 text-center text-zinc-400">No results found</div>';
                     return;
                 }
                 
                 dd.innerHTML = results.map(r => `
-                    <div class="p-3 hover:bg-zinc-700 cursor-pointer border-b border-zinc-700" onclick="selectMalResult(this)" 
+                    <div class="search-result-item" onclick="selectMalResult(this)" 
                         data-title="${escapeHtml(r.title)}" 
                         data-year="${r.year}" 
                         data-cover="${r.cover}" 
@@ -358,8 +408,12 @@
                         data-chapters="${r.chapters}" 
                         data-author="${escapeHtml(r.author)}" 
                         data-genres="${escapeHtml(r.genres)}">
-                        <div class="font-medium">${escapeHtml(r.title)}</div>
-                        <div class="text-xs text-zinc-400">${escapeHtml(r.genres)} · ${r.year}</div>
+                        <img src="${r.cover || 'https://placehold.co/40x60/27272a/52525b?text=No+Img'}" class="search-result-img" onerror="this.src='https://placehold.co/40x60/27272a/52525b?text=No+Img'">
+                        <div class="search-result-info">
+                            <div class="search-result-title">${escapeHtml(r.title)}</div>
+                            <div class="search-result-sub">${escapeHtml(r.genres)} · ${r.year} · ${r.chapters || '?'} ch</div>
+                            ${r.author ? `<div class="search-result-sub text-amber-500/70">✍️ ${escapeHtml(r.author)}</div>` : ''}
+                        </div>
                     </div>
                 `).join('');
             }, 300);
@@ -376,12 +430,13 @@
             document.getElementById('mal-search').value = el.dataset.title;
             updatePosterPreview(el.dataset.cover, el.dataset.title);
             document.getElementById('mal-dd').style.display = 'none';
+            showToast(`Selected: ${el.dataset.title}`);
         }
 
         function updatePosterPreview(url, title) {
             const posterDiv = document.getElementById('poster-box');
             if (posterDiv) {
-                if (url && url !== 'null') {
+                if (url && url !== 'null' && url !== 'undefined') {
                     posterDiv.innerHTML = `<img src="${url}" class="w-20 h-28 object-cover rounded-lg">`;
                 } else {
                     posterDiv.innerHTML = `<div class="w-20 h-28 bg-zinc-800 rounded-lg flex items-center justify-center text-2xl">${(title?.charAt(0) || '?').toUpperCase()}</div>`;
@@ -597,7 +652,14 @@
         }
 
         function renderStars(rating) {
-            return [1, 2, 3, 4, 5].map(i => `<span class="${i <= rating ? 'text-amber-400' : 'text-zinc-600'}">★</span>`).join('');
+            const fullStars = Math.floor(rating);
+            const hasHalf = rating % 1 >= 0.5;
+            let stars = '';
+            for (let i = 1; i <= 10; i++) {
+                if (i <= fullStars) stars += '<span class="text-amber-400">★</span>';
+                else stars += '<span class="text-zinc-600">★</span>';
+            }
+            return stars;
         }
 
         function formatChapter(current, total) {
@@ -656,7 +718,7 @@
                             </div>
                             <div class="flex justify-between mt-1">
                                 <span class="text-[11px] text-zinc-500">${progress}%</span>
-                                <span class="text-[11px] text-amber-400">${m.rating ? '★'.repeat(m.rating) : '☆☆☆☆☆'}</span>
+                                <span class="text-[11px] text-amber-400">${m.rating ? m.rating : '0'}/10</span>
                             </div>
                         </div>
                     </div>
@@ -703,23 +765,18 @@
             renderMedia();
         }
 
-        function setRating(v) {
-            currentRating = v;
-            document.querySelectorAll('.star-btn').forEach((btn, i) => {
-                if (i < v) btn.classList.add('text-amber-400');
-                else btn.classList.remove('text-amber-400');
-            });
-        }
-
         // ==================== MODAL FUNCTIONS ====================
         function openAddModal() {
             editingId = null;
             currentRating = 0;
             document.getElementById('modal-heading').innerText = 'Add New Manga';
             document.querySelectorAll('#modal-overlay input, #modal-overlay textarea, #modal-overlay select').forEach(el => {
-                if (el.id !== 'f-mal-id') el.value = '';
+                if (el.id !== 'f-mal-id' && el.id !== 'star-rating') el.value = '';
             });
             setRating(0);
+            // Reset poster preview
+            const posterDiv = document.getElementById('poster-box');
+            if (posterDiv) posterDiv.innerHTML = `<div class="w-20 h-28 bg-zinc-800 rounded-lg flex items-center justify-center text-2xl">?</div>`;
             document.getElementById('modal-overlay').classList.remove('opacity-0', 'pointer-events-none');
             document.getElementById('modal-overlay').classList.add('opacity-100', 'pointer-events-auto');
         }
@@ -771,7 +828,7 @@
                     <img src="${m.cover || 'https://placehold.co/100x150/1e1e24/52525b'}" class="w-24 h-36 object-cover rounded-xl" onerror="this.src='https://placehold.co/100x150/1e1e24/52525b'">
                     <div class="flex-1">
                         <div class="text-zinc-400 text-sm">${m.type} · ${m.year || '?'}</div>
-                        <div class="text-amber-400 text-2xl font-bold mt-1">${m.rating || '?'}/5</div>
+                        <div class="text-amber-400 text-2xl font-bold mt-1">${m.rating || '?'}/10</div>
                         <div class="text-sm mt-2">${m.author ? `✍️ ${escapeHtml(m.author)}` : ''}</div>
                         ${m.url ? `<div class="mt-2"><a href="${escapeHtml(m.url)}" target="_blank" class="text-amber-400 text-sm"><i class="fa-regular fa-link"></i> Read Online</a></div>` : ''}
                     </div>
@@ -810,7 +867,7 @@
             document.getElementById('detail-overlay').classList.remove('opacity-100', 'pointer-events-auto');
         }
 
-        // Quick add +1 chapter
+        // Quick add +1 chapter with animation
         async function quickAddChapter(id) {
             const manga = mediaData.find(x => x.id === id);
             if (!manga) return;
@@ -836,16 +893,6 @@
                 localStorage.setItem('mangaTracker', JSON.stringify(mediaData));
                 renderMedia();
                 showToast(`+1 Chapter! Now at ${newChapter}`);
-                
-                // Show green checkmark effect
-                const btn = event.currentTarget;
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
-                btn.classList.add('bg-emerald-600');
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                    btn.classList.remove('bg-emerald-600');
-                }, 1000);
             } catch (err) {
                 showToast('Update failed', true);
             }
@@ -865,7 +912,8 @@
             }
         });
 
-        // Load data
+        // Initialize rating stars and load data
+        createRatingStars();
         loadFromSheets();
     </script>
 </body>
